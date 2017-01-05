@@ -63,7 +63,20 @@ else %SI5.2
     config.Channels = size(header.SI.hChannels.channelSave,1);
     config.FrameRate = 1 / header.SI.hRoiManager.scanFramePeriod;
     config.ZoomFactor = header.SI.hRoiManager.scanZoomFactor;
-    config.Frames = header.SI.hStackManager.framesPerSlice;
+    
+    if config.Depth>1
+        try
+            config.Frames = header.SI.hFastZ.numVolumes;
+            config.framesPerSlice = header.SI.hStackManager.framesPerSlice;
+        catch %in case stack from motor
+            config.Frames = header.SI.hStackManager.framesPerSlice;
+        end
+    else
+        config.Frames = header.SI.hStackManager.framesPerSlice;
+        try %hFastZ may not always be present
+            config.Volumes = header.SI.hFastZ.numVolumes;
+        end
+    end
     
     config.SIversion = header.SI.VERSION_MAJOR; %scanImage Version
     
