@@ -1,0 +1,306 @@
+%% Set parameters
+handles.objective = 20;
+handles.zoom = 2;
+handles.reload  = 0;  %reload ROIdata
+handles.randomizelist = 0;
+handles.cycleSequence = 0;
+handles.selectAllROIs=0;
+handles.excludeROIs = 0;
+
+%holo params
+handles.hologram_config = 'DLS';  %options: paramaterSpace, custom, edge, filledCircle, DLS
+handles.centroid_diameter = 0;
+handles.donutFactor = 0;
+handles.shrinkingFactor  = 0;
+handles.excludeCenter = 0;
+handles.excludePixels = 100;
+handles.sphereDiameter = 0.01;
+
+%offset
+handles.xoffset = 0;
+handles.yoffset = 0;
+handles.zoffset = 0;
+
+%generate Grid?
+handles.selectAllROIs=0;
+handles.generateGrid=0;
+handles.generateXYZ=0;
+
+%grid params
+handles.xPoints = 13;
+handles.yPoints = 13;
+handles.zPoints = 19;
+
+handles.xSpacing = 5;
+handles.ySpacing = 5;
+handles.zSpacing = 5;
+
+
+% Update handles structure
+load('\\128.32.173.33\imaging\STIM\HoloRequest\ROIdata.mat');
+handles.ROIdata=ROIdata;
+handles.ImagesInfo=ImagesInfo;
+
+%% Manually Define Sequence
+
+handles = make_DLS_array(handles,50,1,'x',1);
+handles.rois{1}=2
+for n = 2:numel(handles.rois);
+handles.rois{n} = n;
+end
+
+%% EXECUTE!
+warning = 0;
+
+%error checks
+
+% if you have a wrong number for the objective...
+if isempty(intersect(handles.objective,[4 20 40])) == 1;
+    errordlg('Objective Must be equal to 4, 20, or 40.  Bro, even a preschooler can get this right most of the time');
+    warning = 1;
+end;
+
+%if you didnt specify a zoom....
+if isempty('handles.zoom') == 1;
+    errordlg('set zoom or I will eat your face');
+     warning = 1;
+end;
+
+%if you didnt select all ROIs and you didnt specify any ROIs....
+if handles.selectAllROIs == 0;
+    if isfield(handles,'rois') == 0;
+        errordlg('select at least one ROI, you REPUBLICAN')
+        warning = 1;
+    end;
+end;
+
+% if you selected all ROIs, set ROIS to[]
+if handles.selectAllROIs == 1;
+handles.rois = [];
+end;
+
+% if you selected both generate grid and generate XYZ
+if handles.generateGrid == 1 && handles.generateXYZ ==1;
+    errordlg('select either grid or XYZ, you Malodorous Pervert')
+    warning = 1;
+end;
+
+% if you selected a grid, you have to only have one ROI
+if handles.generateGrid == 1;
+    if numel(handles.rois)>1;
+        errordlg('select only 1 ROI from which to make a grid, fart guzzler');
+         warning = 1;
+    end;
+end;
+
+% if you generate an XYZ sequence, you have to have only one ROI
+if handles.generateXYZ == 1;
+    if numel(handles.rois)>1;
+        errordlg('select only 1 ROI from which to make a XYZ map, you nincompoop');
+         warning = 1;
+    end;
+end;
+
+%if randomize, then save
+%if (handles.randomizelist == 1) && (handles.save == 0);
+  %  errordlg('if you randomize, you better save the file, bro');
+%    warning =1;
+%end;   
+
+if isfield(handles,'rois');
+if (isempty(strmatch(handles.hologram_config,'paramaterSpace'))==0) && (numel(handles.rois)>1);
+    errordlg('if you want to cycle through paramater space, select only one holo, brah');
+    warning = 1;
+end;
+end;
+
+if numel(strmatch(handles.hologram_config,'paramaterSpace'))>0 && ( (handles.generateGrid ==1) || (handles.generateXYZ ==1));  
+    errordlg('if you want to cycle through paramater space, then you cant generate a grid or xyz matrix doooofus');
+    warning = 1;
+end;
+    
+
+if numel(strmatch(handles.hologram_config,'paramaterSpace'))>0; 
+    
+    paramConfig=csvread('\\128.32.173.33\imaging\STIM\Calibration Parameters\CustomHologram.csv',1);
+    holoRequest.ParamaterSpace_Params = paramConfig;
+    
+end;
+
+
+
+
+
+
+
+if handles.selectAllROIs == 1 && handles.excludeROIs == 1
+    errordlg('make up you mind, either select all or exclude!  I will murder you in your sleep tonight')
+    warning = 1;
+end;
+
+if isfield(handles,'rois') == 1  ;
+   if handles.excludeROIs == 1 && numel(handles.rois)==0;
+    errordlg('select at least one ROI, shit eater')
+    warning = 1;
+   end;
+elseif isfield(handles,'rois') == 0 && handles.excludeROIs == 1
+    errordlg('select at least one ROI.  You smell like a mouse cage.')
+    warning = 1;
+   
+end;
+
+    
+if numel(strmatch(handles.hologram_config,'custom'))>0 
+    if (handles.donutFactor > 1) || (handles.donutFactor < 0);
+    
+         errordlg('donut factor should be between 0 and 1.  Your mother was a hampster!')
+         warning = 1;
+    end;
+
+    if (handles.shrinkingFactor > 1) || (handles.shrinkingFactor < 0);
+    
+          errordlg('shrinking factor should be between 0 and 1.  Your father smelt of elderberries!')
+         warning = 1;
+    end;
+
+end;
+
+
+elements =[];
+if isfield(handles,'rois')==1
+for n=1:numel(handles.rois);
+    elements=cat(2,elements,handles.rois{n});
+end;   
+else
+    errordlg('shit man, select an roi already!')
+end;
+
+if max(elements)>numel(handles.ROIdata.rois);
+    errordlg('ROI requested that does not exist in ROIdata.  Also your mother is a whore');
+    warning = 1;
+end;
+
+if min(elements)<1;
+    errordlg('ROI requested that does not exist in ROIdata.  Also your mother is a whore');
+    warning = 1;
+end;
+
+%% convert XYZ offset to microns
+
+if (handles.objective == 20) && handles.zoom == 1
+    lx=800;
+    ly=800;
+elseif (handles.objective == 20) && handles.zoom == 2
+    lx= 400;
+    ly= 400;
+elseif (handles.objective == 20) && handles.zoom == 4
+    lx= 200;
+    ly= 200;
+else
+    errordlg('window size unavialable for selected obj/zoom - xy offset unavailable')
+    warning = 1;
+end
+
+
+
+
+%%
+
+if warning == 0;
+    
+    %convert microns to nico units
+    MODxoffset = (handles.xoffset/lx)*512;
+    MODyoffset = (handles.yoffset/ly)*512;
+    MODxSpacing = (handles.xSpacing/lx)*512;
+    MODySpacing = (handles.ySpacing/ly)*512;
+    
+    
+    %generate output file
+    holoRequest.reload = handles.reload;
+    holoRequest.objective=handles.objective;
+    holoRequest.zoom=handles.zoom;
+    
+    if handles.selectAllROIs ==1;
+        handles.rois={[1:numel(handles.ROIdata.ROIdata.rois(:))]};
+    end
+    [listOfPossibleHolos convertedSequence] = convertSequence(handles.rois);
+    holoRequest.rois=listOfPossibleHolos;
+    holoRequest.Sequence = {convertedSequence};
+    holoRequest.xoffset=MODxoffset;
+    holoRequest.yoffset=MODyoffset;
+    holoRequest.zoffset=handles.zoffset;
+    holoRequest.grid=handles.generateGrid;
+    holoRequest.xyz_map=handles.generateXYZ;
+    holoRequest.hologram_config=handles.hologram_config;
+    holoRequest.centroid_diameter = handles.sphereDiameter;
+    holoRequest.donut_factor = handles.donutFactor;
+    holoRequest.shrinking_factor  = handles.shrinkingFactor;
+    holoRequest.spacing.x=MODxSpacing;
+    holoRequest.spacing.y=MODySpacing;
+    holoRequest.spacing.z=handles.zSpacing;
+    holoRequest.points.x=handles.xPoints;
+    holoRequest.points.y=handles.yPoints;
+    holoRequest.points.z=handles.zPoints;
+    holoRequest.randomizelist = handles.randomizelist;
+    holoRequest.excludeCenter = handles.excludeCenter;
+    holoRequest.excludeRadius = handles.excludePixels;
+    holoRequest.excludeROIs = handles.excludeROIs;
+    holoRequest.cycleSequence = handles.cycleSequence;
+    
+    %% generate random list
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    NXYZ = [holoRequest.points.x,holoRequest.points.y,holoRequest.points.z];
+    LXYZ = [holoRequest.spacing.x,holoRequest.spacing.y,holoRequest.spacing.z];
+    UX = linspace(-NXYZ(1)*LXYZ(1),NXYZ(1)*LXYZ(1),2*NXYZ(1)+1);
+    UY = linspace(-NXYZ(2)*LXYZ(2),NXYZ(2)*LXYZ(2),2*NXYZ(2)+1);
+    UZ = linspace(-NXYZ(3)*LXYZ(3),NXYZ(3)*LXYZ(3),2*NXYZ(3)+1);
+    
+    GridPosition = zeros(3,prod(2*NXYZ+1));
+    llcounter = 1;
+    for lli = 1:(2*NXYZ(1)+1)
+        for llj = 1:(2*NXYZ(2)+1)
+            for llk = 1:(2*NXYZ(3)+1)
+                GridPosition(1,llcounter) =  UX(lli);
+                GridPosition(2,llcounter) =  UY(llj);
+                GridPosition(3,llcounter) =  UZ(llk);
+                llcounter = llcounter +1;
+            end
+        end
+    end
+    
+    MapPosition = zeros(3,(2*sum(NXYZ)+3));
+    llcounter = 1;
+    for lli = 1:(2*NXYZ(1)+1)
+        MapPosition(1,llcounter) = UX(lli);
+        llcounter = llcounter +1;
+    end
+    for llj = 1:(2*NXYZ(2)+1)
+        MapPosition(2,llcounter) = UY(llj);
+        llcounter = llcounter +1;
+    end
+    for llk = 1:(2*NXYZ(3)+1)
+        MapPosition(3,llcounter) = UZ(llk);
+        llcounter = llcounter +1;
+    end
+    holoRequest.XYZMapPosition = MapPosition;
+    holoRequest.GridPosition   = GridPosition;
+    MapPosition = MapPosition(:,randperm(2*sum(NXYZ)+3));
+    GridPosition = GridPosition(:,randperm(prod(2*NXYZ+1)));
+    holoRequest.RandXYZMapPosition = MapPosition;
+    holoRequest.RandGridPosition   = GridPosition;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
+    
+    
+    save('\\128.32.173.33\imaging\STIM\HoloRequest\HoloRequest.mat','holoRequest');
+    save('\\128.32.173.33\imaging\STIM\HoloRequest-DAQ\HoloRequest.mat','holoRequest');
+    
+    ROIdata = handles.ROIdata;
+    save('\\128.32.173.33\imaging\STIM\HoloRequest\HoloRequest.mat','ROIdata');
+    save('\\128.32.173.33\imaging\STIM\HoloRequest-DAQ\HoloRequest.mat','ROIdata');
+    
+    
+    
+end 
