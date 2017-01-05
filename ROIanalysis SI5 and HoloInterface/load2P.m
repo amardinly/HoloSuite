@@ -186,8 +186,9 @@ switch LoadType
                         % supports both the SI5 and SI5.2 formats
                         
                         Images = ScanImageTiffReader(ImageFiles{index}).data();
-                        Images = reshape(Images,[Config.Width,Config.Height,Config.Depth,Config.Channels,Config.Frames]);
-                        Images = permute(Images,[2 1 3 4 5]);
+                        Images = reshape(Images,[Config.Width,Config.Height,Config.Channels,Config.Depth,Config.Frames,]);
+                        Images = permute(Images,[2 1 4 3 5]);
+                        ;
                         
                         
                     case '.imgs'
