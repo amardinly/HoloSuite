@@ -102,13 +102,13 @@ end
 
 
 if option == 4
-
-
-Conversion.polyZ = polyfit(XYZ_Points.ASK.Z,XYZ_Points.GET.Z,4);
+LP = 6;
+Pdim = 3;
+ZPdim=3;
+Conversion.polyZ = polyfit(XYZ_Points.ASK.Z,XYZ_Points.GET.Z,ZPdim);
 y1 = polyval(Conversion.polyZ,XYZ_Points.ASK.Z);
 LN = numel(XYZ_Points.ASK.X);
-LP = 6;
-Pdim = 4;
+
 Conversion.PX = zeros(Pdim+1,LP);
 Conversion.PY = zeros(Pdim+1,LP);
 GX = linspace(0,0,LP);
