@@ -1432,9 +1432,10 @@ set(gd.DataSelection.computation, 'String', gd.Images.Computations.Names, 'Value
 
 % Determine Colormap
 for c = 1:gd.Images.nChannels
-    img = double(gd.Images.frames(:,:,1:min(end,5),c,1:min(end,5)));
+    img = double(gd.Images.frames(:,:,1:min(end,50),c,1:min(end,50)));
 %     gd.state.(gd.Images.Computations.Names{1}).clim(c).limits=[min(img(:)),max(img(:))];
-    gd.state.(gd.Images.Computations.Names{1}).clim(c).limits = [double(intmin(gd.Images.info.Precision)), double(intmax(gd.Images.info.Precision))];
+    rangeExpand = intmax(gd.Images.info.Precision)*0.01;
+    gd.state.(gd.Images.Computations.Names{1}).clim(c).limits = [min(img(:))-double(rangeExpand) max(img(:))+double(rangeExpand)];%[double(intmin(gd.Images.info.Precision)), double(intmax(gd.Images.info.Precision))];
     gd.state.(gd.Images.Computations.Names{1}).clim(c).current = [min(img(:)), prctile(img(:),99.99)];
     set(gd.View.axes,'CLim',gd.state.(gd.Images.Computations.Names{1}).clim(c).current);
     gd.state.(gd.Images.Computations.Names{1}).colormap(c).orig = colormap;
@@ -1458,7 +1459,7 @@ set(gd.DataSelection.climMin,...
     'Min',          gd.state.(gd.Images.Computations.Names{1}).clim(1).limits(1),...
     'Max',          gd.state.(gd.Images.Computations.Names{1}).clim(1).limits(2),...
     'Value',        gd.state.(gd.Images.Computations.Names{1}).clim(1).current(1),...
-    'SliderStep',   [minorstep,max(2*minorstep,.1)],...
+    'SliderStep',   [minorstep,max(2*minorstep,.01)],...
     'Enable',       'on');
 set(gd.DataSelection.climMinText,...
     'String',       num2str(round(gd.state.(gd.Images.Computations.Names{1}).clim(gd.state.channels).current(1))),...
@@ -1467,7 +1468,7 @@ set(gd.DataSelection.climMax,...
     'Min',          gd.state.(gd.Images.Computations.Names{1}).clim(1).limits(1),...
     'Max',          gd.state.(gd.Images.Computations.Names{1}).clim(1).limits(2),...
     'Value',        gd.state.(gd.Images.Computations.Names{1}).clim(1).current(2),...
-    'SliderStep',   [minorstep,max(2*minorstep,.1)],...
+    'SliderStep',   [minorstep,max(2*minorstep,.01)],...
     'Enable',       'on');
 set(gd.DataSelection.climMaxText,...
     'String',       num2str(round(gd.state.(gd.Images.Computations.Names{1}).clim(gd.state.channels).current(2))),...
@@ -1623,6 +1624,7 @@ plotmainaxes([],[],gd);
 function ClimMinimum(hObject,eventdata,gd)
 Computation = gd.Images.Computations.Names{get(gd.DataSelection.computation, 'Value')};
 NewValue = round(get(hObject, 'Value'));
+NewValue = max(NewValue,gd.state.(Computation).clim(gd.state.channels).limits(1));
 if NewValue >= gd.state.(Computation).clim(gd.state.channels).current(2)
     gd.state.(Computation).clim(gd.state.channels).current(1) = gd.state.(Computation).clim(gd.state.channels).current(2)-1;
     set(hObject, 'Value', gd.state.(Computation).clim(gd.state.channels).current(1));
@@ -1637,6 +1639,7 @@ plotmainaxes([],[],gd);
 function ClimMaximum(hObject,eventdata,gd)
 Computation = gd.Images.Computations.Names{get(gd.DataSelection.computation, 'Value')};
 NewValue = round(get(hObject, 'Value'));
+NewValue = min(NewValue,gd.state.(Computation).clim(gd.state.channels).limits(2));
 if NewValue <= gd.state.(Computation).clim(gd.state.channels).current(1)
     gd.state.(Computation).clim(gd.state.channels).current(2) = gd.state.(Computation).clim(gd.state.channels).current(1)+1;
     set(hObject, 'Value', gd.state.(Computation).clim(gd.state.channels).current(2));
@@ -1672,8 +1675,9 @@ switch current{1}
         gd.state.Average.colormap = gd.state.(gd.Images.Computations.Names{1}).colormap;
         for cindex = 1:size(gd.Images.Computations.Data.Average, 4)
             temp = gd.Images.Computations.Data.Average(:,:,:,cindex,:);
-            gd.state.Average.clim(cindex).limits = [min(temp(:)), max(temp(:))];
-            gd.state.Average.clim(cindex).current = [gd.state.Average.clim(cindex).limits(1), prctile(temp(:),99.98)];
+            rangeExpand = double(floor(intmax(gd.Images.info.Precision)*0.01));
+            gd.state.Average.clim(cindex).limits = [min(temp(:))-rangeExpand, max(temp(:))+rangeExpand];
+            gd.state.Average.clim(cindex).current = [min(temp(:)), prctile(temp(:),99.98)];
         end
         gd.Images.Computations.Names = [gd.Images.Computations.Names; 'Average'];
         guidata(hObject, gd);
