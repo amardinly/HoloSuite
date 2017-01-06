@@ -4,7 +4,7 @@ function [ Interpolated ] = function_3DCofC( varargin )
  if nargin==3
  option = varargin{3};
  else
-     option = 1
+     option = 1;
  end
  
 %%%% New smart method

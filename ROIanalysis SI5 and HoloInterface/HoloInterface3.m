@@ -458,7 +458,7 @@ end;
 %if you didnt select all ROIs and you didnt specify any ROIs....
 if handles.selectAllROIs == 0;
     if isfield(handles,'rois') == 0;
-        errordlg('select at least one ROI, you REPUBLICAN')
+        errordlg('select at least one ROI, you Trump-voter')
         warning = 1;
     end;
 end;
@@ -470,7 +470,7 @@ end;
 
 % if you selected both generate grid and generate XYZ
 if handles.generateGrid == 1 && handles.generateXYZ ==1;
-    errordlg('select either grid or XYZ, you Malodorous Pervert')
+    errordlg('select either grid OR XYZ, you Malodorous Pervert')
     warning = 1;
 end;
 
@@ -599,7 +599,7 @@ end
 
 
     if ~isnan(handles.sphereDiameter);
-        disp(['resizing all ROIs to be a disc of ' num2str(handles.sphereDiameter) ' um around centroid']);
+        %disp(['resizing all ROIs to be a disc of ' num2str(handles.sphereDiameter) ' um around centroid']);
         
         locations = SatsumaRigFile();
         load([locations.HoloRequest 'ROIdata.mat']);
@@ -631,6 +631,7 @@ end
         save([locations.HoloRequest_DAQ 'ROIdata.mat'],'ROIdata','-mat')
         save([locations.HoloRequest_DAQ 'ROIdata.mat'],'ImagesInfo','-append')
         disp('ROIs adjusted and uploaded to holoRequest servers')
+  
     end;
     
     if handles.correctPower
@@ -716,7 +717,7 @@ if warning == 0;
     holoRequest.cycleSequence = handles.cycleSequence;
     
     
-    %% generate random list
+    %% generate random list (nico...)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     NXYZ = [holoRequest.points.x,holoRequest.points.y,holoRequest.points.z];
@@ -784,6 +785,7 @@ end;
 
 
 guidata(hObject, handles);
+
 function YSpacing_Callback(hObject, eventdata, handles)
 % hObject    handle to YSpacing (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB

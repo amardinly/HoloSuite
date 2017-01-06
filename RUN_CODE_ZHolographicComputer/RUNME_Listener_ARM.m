@@ -6,7 +6,7 @@ Screen('Preference', 'SkipSyncTests', 1);
 Screen('Preference','VisualDebugLevel', 0);
 
 disp('Welcome to the Holostim Listener');
-disp('Cpoyright A.M.Mardinly, I.A.Oldensmerg, N.C.Pegard 2015');
+disp('Cpoyright A.R.Mardinly, I.A.Oldensmerg, N.C.Pegard 2015');
 disp('Make sure SLM is on and you''re not being a moron some other way');
 disp(' ');
 
@@ -14,7 +14,8 @@ disp(' ');
 abort = handles.abort;
 
 %load parameters
-addpath('../');[ Setup, SLM, ~ ] = Load_Parameters(0); %Load SLM parameters
+addpath('../');
+[ Setup, SLM, ~ ] = Load_Parameters(0); %Load SLM parameters
 disp('Listener is activated');
 
 
@@ -44,9 +45,8 @@ if isfield(handles,'LoadedSequenceName') && handles.useLoad
     %Tack Sequence onto HoloRequest
     holoRequest.Sequence{1}=1:length(MySequence);
     
-    %parse holorequest and generate holograms
+    %Run sequence listener with previously loaded holograms
     function_SLM_and_DAQ_ARM(MySequence, SLM,holoRequest,handles);
-    
     
 else  %if we are generating a new sequence
     
@@ -113,7 +113,11 @@ else  %if we are generating a new sequence
             %load HoloRequest and Calibration Points
             load(strcat(Setup.HoloRequestFolder,'\HoloRequest.mat'));
             disp(strcat('Zoom level = ',int2str(holoRequest.zoom)));
+           
+            %%  MUST CHANGE THIS LOAD LINE FOR OPTOTUNE!
+            errordlg('Line 117 - Change path to point to correct optotune points')
             load(strcat(Setup.CalibrationFolder,'\',int2str(holoRequest.objective),'X_Objective_Zoom_',int2str(holoRequest.zoom),'_XYZ_Calibration_Points.mat'));
+            %%
             disp('Holo Request file successfully loaded')
             set(handles.statusText,'String','HoloRequest file loaded')
             
@@ -124,7 +128,8 @@ else  %if we are generating a new sequence
             clear('parametres');
             
            
-            %What is this for  - ARM
+            %Extract PowerMultiplier computed by holoInterface to offset
+            %SLM attenuation
             if isfield(holoRequest,'powerMultiplier');
             parametres.powerMultiplier = holoRequest.powerMultiplier;
             end
@@ -202,6 +207,7 @@ else  %if we are generating a new sequence
 %             end;
             
             if holoRequest.grid == 0 && holoRequest.xyz_map == 0 && numel(holoRequest.rois) <= 1 && strcmp(holoRequest.hologram_config, 'paramaterSpace') == 0; %Case: single hologram only
+            
             %case: no grid, no map, only 1 ROI requested, parameter space
             %map not requested - this code handles a holorequest containing
             %a request for only 1 hologram, not a sequence
@@ -211,7 +217,7 @@ else  %if we are generating a new sequence
                 
                 %set(handles.statusText,'String',strcat('Single Holo requested: ROIs requested are ',num2str(holoRequest.rois{1})));
                 
-                guidata(ListenerForHoloRequest,handles) %these are necessary to update text on gui..do we need this?
+                %guidata(ListenerForHoloRequest,handles) %these are necessary to update text on gui..do we need this?
                 
                 if numel(holoRequest.rois) == 0; disp('All ROIS'); else  disp(holoRequest.rois{1}); end;
                 
@@ -237,8 +243,8 @@ else  %if we are generating a new sequence
                 end;
                 
                 [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
-              
-                               
+                   
+                %plot figure + mask               
                 f = figure(1);
                 subplot(2,1,1);
                 pcolor(double(Hologram)); shading flat; title('Phase mask'); 
@@ -249,10 +255,12 @@ else  %if we are generating a new sequence
                 axis image;
                 subplot(2,1,2); 
                 pcolor(double(maskref)); shading flat; title('Targeted ROIs'); axis image;
+                
                 t = zeros(1,1); hhh = Hologram; img = [hhh hhh hhh]; 
                 t=Screen('MakeTexture',w,img); 
                 Screen('DrawTexture', w, t); 
                 Screen('Flip', w);
+                
                 disp('Hologram is now on the SLM');disp('--');disp('--');
                 set(handles.statusText,'String','Hologram is now on the SLM')
                 
@@ -291,61 +299,85 @@ else  %if we are generating a new sequence
     set(handles.listening,'Value',0)
     guidata(ListenerForHoloRequest,handles)
     disp('LISTENER IS NOW TURNED OFF');
-    NXYZ = [holoRequest.points.x,holoRequest.points.y,holoRequest.points.z]; NX = NXYZ(1); NY = NXYZ(2); NZ = NXYZ(3);
-    LXYZ = [holoRequest.spacing.x,holoRequest.spacing.y,holoRequest.spacing.z]; LX = LXYZ(1); LY = LXYZ(2); LZ = LXYZ(3); clear 'LXYZ';
-    if screenon == 0; screenon = 1; [w,rect]=Screen('OpenWindow',SLM.ScreenID,[0 0 0]); end;
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Done until here, screen is turned on correctly at this point...
-    %%%%%%%%%%%%%%%%%%%%%%%%%%
+    NXYZ = [holoRequest.points.x,holoRequest.points.y,holoRequest.points.z]; 
+    NX = NXYZ(1); 
+    NY = NXYZ(2);
+    NZ = NXYZ(3);
+    
+    LXYZ = [holoRequest.spacing.x,holoRequest.spacing.y,holoRequest.spacing.z];
+    LX = LXYZ(1);
+    LY = LXYZ(2);
+    LZ = LXYZ(3);
+    clear 'LXYZ';
+    
+    if screenon == 0;
+        screenon = 1;
+        [w,rect]=Screen('OpenWindow',SLM.ScreenID,[0 0 0]);
+    end;
+
+    
     foundcrap = 0;
-    if strcmp(holoRequest.hologram_config, 'paramaterSpace');
-        disp('You want to generate a sequence though the preselected parameters in the CustomHologram.xls file')
-        thevalues = csvread(strcat(Setup.CalibrationFolder,'\CustomHologram.csv')); [LN,LP] = size(thevalues); disp(strcat('You have requested --',int2str(LN),' - Holograms'));
-        MySequence = {};
-        holoRequest.Sequence = {};
-        for iiij = 1:LN
-            disp(strcat('Now compiling hologram --',int2str(iiij),'-- Gof --',int2str(LN)));
-            set(handles.statusText,'String','Compiling Hologram')
-            guidata(ListenerForHoloRequest,handles)
-            clear 'parametres';
-            PickROIS = holoRequest.rois{1}; %In parameters space, we just pick the first hologram in the list
-            if strcmp(holoRequest.hologram_config, 'DLS'); disp('You have rquested diffraction limited holograms');
-                
-                parametres.OnlyCenterDotHologram = 1;
-                parametres.nDLS = holoRequest.nDLS;
-                
-                if strcmp(holoRequest.channel,'green')
-                    parametres.channel = 1;
-                elseif strcmp(holoRequest.channel,'red')
-                    parametres.channel = 2;
-                end;
-                
-                
-            end;
-            
-            
-            
-            if thevalues(iiij,2) == 1;  parametres.OnlyCenterDotHologram = 1; else parametres.OnlyCenterDotHologram = 0; end;
-            parametres.ShrinkFactorList = {thevalues(iiij,3)};
-            parametres.DonutFactorList = {thevalues(iiij,4)};
-            holoRequest.zoffset = thevalues(iiij,5);
-            if thevalues(iiij,6) == 0 ;  parametres.ExcludeCenter = 0; else parametres.ExcludeCenter = thevalues(iiij,6); end;
-            if thevalues(iiij,7) == 0 ;  parametres.nDLS = 0; else parametres.nDLS = thevalues(iiij,7); end;
-            
-            [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
-            save(['Hologram_' num2str(iiij)],'Hologram');
-            pause(5)
-            MySequence{iiij} = Hologram;
-            MySequenceMask{iiij} = Mask;
-        end
-        holoRequest.Sequence{1} = 1:LN;
+    
+% ARM 1/6/17 - commeneted out param space functionality
+
+%     if strcmp(holoRequest.hologram_config, 'paramaterSpace');
+%         disp('You want to generate a sequence though the preselected parameters in the CustomHologram.xls file')
+%         thevalues = csvread(strcat(Setup.CalibrationFolder,'\CustomHologram.csv')); [LN,LP] = size(thevalues); disp(strcat('You have requested --',int2str(LN),' - Holograms'));
+%         MySequence = {};
+%         holoRequest.Sequence = {};
+%         for iiij = 1:LN
+%             disp(strcat('Now compiling hologram --',int2str(iiij),'-- Gof --',int2str(LN)));
+%             set(handles.statusText,'String','Compiling Hologram')
+%             guidata(ListenerForHoloRequest,handles)
+%             clear 'parametres';
+%             PickROIS = holoRequest.rois{1}; %In parameters space, we just pick the first hologram in the list
+%             if strcmp(holoRequest.hologram_config, 'DLS'); disp('You have rquested diffraction limited holograms');
+%                 
+%                 parametres.OnlyCenterDotHologram = 1;
+%                 parametres.nDLS = holoRequest.nDLS;
+%                 
+%                 if strcmp(holoRequest.channel,'green')
+%                     parametres.channel = 1;
+%                 elseif strcmp(holoRequest.channel,'red')
+%                     parametres.channel = 2;
+%                 end;
+%                 
+%                 
+%             end;
+%             
+%             
+%             
+%             if thevalues(iiij,2) == 1;  parametres.OnlyCenterDotHologram = 1; else parametres.OnlyCenterDotHologram = 0; end;
+%             parametres.ShrinkFactorList = {thevalues(iiij,3)};
+%             parametres.DonutFactorList = {thevalues(iiij,4)};
+%             holoRequest.zoffset = thevalues(iiij,5);
+%             if thevalues(iiij,6) == 0 ;  parametres.ExcludeCenter = 0; else parametres.ExcludeCenter = thevalues(iiij,6); end;
+%             if thevalues(iiij,7) == 0 ;  parametres.nDLS = 0; else parametres.nDLS = thevalues(iiij,7); end;
+%             
+%             [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
+%             save(['Hologram_' num2str(iiij)],'Hologram');
+%             pause(5)
+%             MySequence{iiij} = Hologram;
+%             MySequenceMask{iiij} = Mask;
+%         end
+%         holoRequest.Sequence{1} = 1:LN;
         
-    elseif numel(holoRequest.rois)>1 && holoRequest.grid == 0 && holoRequest.xyz_map == 0
-        disp('You want to display a particular sequence in a loop'); disp('Here is the sequence, pulse by pulse');
-        for iii = 1:numel(holoRequest.rois); disp(holoRequest.rois{iii});end;
+if numel(holoRequest.rois)>1 && holoRequest.grid == 0 && holoRequest.xyz_map == 0;
+ %if there is more than one hologram in the sequence and grid / map are not
+ %requested....
+        
+        %disp sequence
+        disp('You want to display a particular sequence in a loop'); 
+        disp('Here is the sequence, pulse by pulse');
+        
+        for iii = 1:numel(holoRequest.rois); 
+            disp(holoRequest.rois{iii});
+        end;
+        
+        
         MySequence = {};
-        handles.writeROIsON =1;
+        handles.writeROIsON = 1;
         for iiij = 1:numel(holoRequest.rois)
             PickROIS = holoRequest.rois{iiij};
             [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
@@ -398,14 +430,21 @@ else  %if we are generating a new sequence
         
     else
         foundcrap = 1;
-        clc;disp('You have requested a sequence but there I cant figure out what type');disp('I quit, next time send me a valid holoRequest file')
+        clc;
+        disp('You have requested a sequence but there I cant figure out what type');
+        disp('I quit, next time send me a valid holoRequest file')
         set(handles.statusText,'String','error - sequence type not determined.  Go bother Nico')
         guidata(ListenerForHoloRequest,handles)
     end
     
     
     clc
-    if screenon== 1; screenon=0;Screen('CloseAll'); end
+    
+    if screenon== 1; 
+    screenon=0;
+    Screen('CloseAll'); 
+    end
+    
     disp('Holograms have been compiled, we are preparing slm and loading holograms');
     set(handles.statusText,'String','Holograms have been compiled, we are preparing slm and loading holograms')
     guidata(ListenerForHoloRequest,handles)

@@ -2276,7 +2276,7 @@ if gd.Internal.ROIs.n>0;
     OptotuneDepths = SI.SI.hStackManager.zs;
     
     for j=1:numel(ROIdata.rois);
-        ROIdata.rois(j).OptotuneDepth=OptotuneDepths(ROIdata.rois(1).depth);
+        ROIdata.rois(j).OptotuneDepth=OptotuneDepths(ROIdata.rois(j).depth);
     end
     
     %remove erroneous info from ImagesInfo and include the metadata for
