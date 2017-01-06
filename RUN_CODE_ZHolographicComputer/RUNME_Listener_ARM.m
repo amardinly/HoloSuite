@@ -115,8 +115,8 @@ else  %if we are generating a new sequence
             disp(strcat('Zoom level = ',int2str(holoRequest.zoom)));
            
             %%  MUST CHANGE THIS LOAD LINE FOR OPTOTUNE!
-            errordlg('Line 117 - Change path to point to correct optotune points')
-            load(strcat(Setup.CalibrationFolder,'\',int2str(holoRequest.objective),'X_Objective_Zoom_',int2str(holoRequest.zoom),'_XYZ_Calibration_Points.mat'));
+       %     errordlg('Line 117 - Change path to point to correct optotune points')
+            load(strcat(Setup.CalibrationFolder,'\',int2str(holoRequest.objective),'X_Objective_Zoom_',int2str(holoRequest.zoom),'_XYZ_Calibration_PointsOPTOTUNE.mat'));
             %%
             disp('Holo Request file successfully loaded')
             set(handles.statusText,'String','HoloRequest file loaded')
