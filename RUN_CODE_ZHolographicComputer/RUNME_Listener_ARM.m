@@ -1,27 +1,30 @@
 function RUNME_Listener_ARM(handles);
-%load all locations
 
-locations = SatsumaRigFile();
+locations = SatsumaRigFile(); %load all locations from Rig File
 
 Screen('Preference', 'SkipSyncTests', 1);
 Screen('Preference','VisualDebugLevel', 0);
-disp('Welcome to the Holostim Listener');disp('Cpoyright A.M.Mardinly, I.A.Oldensmerg, N.C.Pegard 2015');disp('Make sure SLM is on and routed in the "SEQUENCE" mode');disp(' ');
 
-%defeine whether abort is enabled
+disp('Welcome to the Holostim Listener');
+disp('Cpoyright A.M.Mardinly, I.A.Oldensmerg, N.C.Pegard 2015');
+disp('Make sure SLM is on and you''re not being a moron some other way');
+disp(' ');
+
+%Export abort state from handles for ease of use
 abort = handles.abort;
 
-
-clc;
 %load parameters
-addpath('../');[ Setup, SLM, ~ ] = Load_Parameters(0);
+addpath('../');[ Setup, SLM, ~ ] = Load_Parameters(0); %Load SLM parameters
 disp('Listener is activated');
 
 
 %define instructions on what to do if we're loading a pre-saved sequence
-if isfield(handles,'LoadedSequenceName') && handles.useLoad
+if isfield(handles,'LoadedSequenceName') && handles.useLoad  
+    
     disp('Sequence Loaded from file detected')
     set(handles.statusText,'String','Detected Loaded File');
-    load([handles.LoadedPathName handles.LoadedSequenceName])
+    
+    load([handles.LoadedPathName handles.LoadedSequenceName]) %Load SavedHolograms
     
     if ~exist('ROIdata')
         errordlg('Saved ROIdata not found')
@@ -34,9 +37,14 @@ if isfield(handles,'LoadedSequenceName') && handles.useLoad
         return
     end;
     
+    %save this holorequest and ROIdatafile
     save([locations.HoloRequest_DAQ 'holoRequest.mat'],'holoRequest')
     save([locations.HoloRequest_DAQ 'ROIdata.mat'],'ROIdata')
+    
+    %Tack Sequence onto HoloRequest
     holoRequest.Sequence{1}=1:length(MySequence);
+    
+    %parse holorequest and generate holograms
     function_SLM_and_DAQ_ARM(MySequence, SLM,holoRequest,handles);
     
     
@@ -47,15 +55,19 @@ else  %if we are generating a new sequence
     disp('Now looking for ROI DATA file');
     set(handles.statusText,'String','Listener Active, looking for ROIData.mat')
     
-    
     roidatafound = 0;
+    %run loops unless ROIData file appears or we have an abort
     while (roidatafound == 0) && (abort == 0);
+        %get abort status
         abort = get(handles.abortToggle,'Value');
-        if abort == 1;
-            % break
+        
+        %if abort, return
+        if abort;
             return
         end;
-        if exist(strcat(Setup.HoloRequestFolder,'\ROIdata.mat'), 'file') == 2
+        
+        
+        if exist(strcat(Setup.HoloRequestFolder,'\ROIdata.mat'), 'file') == 2; %if file detected
             disp('ROI DATA file found,loading')
             set(handles.statusText,'String','Found ROI data - loading')
             roidatafound = 1;
@@ -67,7 +79,10 @@ else  %if we are generating a new sequence
     %load ROI data
     load(strcat(Setup.HoloRequestFolder,'\ROIdata.mat'));
     clear 'roidatafound'
-    disp('ROI DATA file succesfully loaded');disp(' ');disp('Listener is now active, waiting for Holo Request')
+    disp('ROI DATA file succesfully loaded');
+    disp(' ');
+    disp('Listener is now active, waiting for Holo Request')
+    
     set(handles.statusText,'String','ROIdata loaded, waiting for HoloRequest')
     
     
@@ -78,89 +93,171 @@ else  %if we are generating a new sequence
     while (sequenceholorequest == 0) && (abort == 0);
         
         abort = get(handles.abortToggle,'Value');
-        if abort == 1;
-            % break
+        if abort;
             return
             
         end;
         
         %if we find a holoRequest....
         if exist(strcat(Setup.HoloRequestFolder,'\HoloRequest.mat'), 'file') == 2
-            pause(0.5)
+            pause(0.1)
             disp('Holo Request file found, loading')
+            
             set(handles.statusText,'String','Found HoloRequest file, loading')
-            set(handles.listening,'Value',0)
-            guidata(ListenerForHoloRequest,handles)
+            
+            set(handles.listening,'Value',0) %stop listening!
+            
+            guidata(ListenerForHoloRequest,handles)  
+            
+            
+            %load HoloRequest and Calibration Points
             load(strcat(Setup.HoloRequestFolder,'\HoloRequest.mat'));
             disp(strcat('Zoom level = ',int2str(holoRequest.zoom)));
             load(strcat(Setup.CalibrationFolder,'\',int2str(holoRequest.objective),'X_Objective_Zoom_',int2str(holoRequest.zoom),'_XYZ_Calibration_Points.mat'));
-            delete(strcat(Setup.HoloRequestFolder,'\HoloRequest.mat'));
             disp('Holo Request file successfully loaded')
             set(handles.statusText,'String','HoloRequest file loaded')
+            
+            %Delete holorequest so next one can be detected
+            delete(strcat(Setup.HoloRequestFolder,'\HoloRequest.mat'));
+           
             guidata(ListenerForHoloRequest,handles)
             clear('parametres');
+            
            
+            %What is this for  - ARM
             if isfield(holoRequest,'powerMultiplier');
             parametres.powerMultiplier = holoRequest.powerMultiplier;
             end
             
-            %reload ROIdata file?
+            
+            %reload ROIdata file if requested
             if holoRequest.reload == 1; load(strcat(Setup.HoloRequestFolder,'\ROIdata.mat')); disp('ROI Data File updated as requested');end;
-            %if we're exlcuding ROis...
-            if holoRequest.excludeROIs == 1;ROICount = numel(ROIdata.rois);for i = 1:numel(holoRequest.rois);holoRequest.rois{i} = setxor(holoRequest.rois{i},1:ROICount);end;end;
+            
+            %if we're defining sequence by exluding rois:
+            if holoRequest.excludeROIs == 1;
+                ROICount = numel(ROIdata.rois);
+                for i = 1:numel(holoRequest.rois);
+                    holoRequest.rois{i} = setxor(holoRequest.rois{i},1:ROICount);
+                end;
+            end;
+                        
             %Parse hologram type (center dot or disc,edge,etc).
             if strcmp(holoRequest.hologram_config, 'DLS');
+            
                 disp('You have rquested diffraction limited holograms');
+                disp('For 3D-SHOT, this will manifest as a 20 um disc');
+                
                 parametres.OnlyCenterDotHologram = 1;
-                try
-                    parametres.nDLS = holoRequest.nDLS;
-                catch
-                    parametres.nDLS = 1;
-                end
+                parametres.nDLS = 1;  
                 
-                try
-                    if strcmp(holoRequest.channel,'green')
-                        parametres.channel = 1;
-                    elseif strcmp(holoRequest.channel,'red')
-                        parametres.channel = 2;
-                    end;
-                end
+                %ARM - commented out obsolete code where we try targeting 1
+                %ROI with many DLS
+                %try
+                %    parametres.nDLS = holoRequest.nDLS;
+                %catch
+                %    parametres.nDLS = 1;  
+                %end
                 
-            elseif strcmp(holoRequest.hologram_config, 'filledCircle');  disp('You have rquested Filled Cirlce holograms'); parametres.OnlyCenterDotHologram = 0;
-            elseif strcmp(holoRequest.hologram_config, 'edge'); disp('You have rquested Edge Only holograms'); parametres.ShrinkFactorList = {0}; parametres.DonutFactorList = {0.9};
-            elseif strcmp(holoRequest.hologram_config, 'custom');disp('You have requested Custom holograms'); parametres.ShrinkFactorList = {holoRequest.shrinking_factor}; parametres.DonutFactorList = {holoRequest.donut_factor};if holoRequest.centroid_diameter == 0; disp('You want something shaped like the ROI');else;disp(strcat('You want a sphere of radius  -- ',int2str(holoRequest.centroid_diameter))); parametres.CentroidDiameter = {holoRequest.centroid_diameter}; end;
-            else disp('Bullshit something is wrong with your request');
+                % ARM - obsolete thing that never worked -img segementation
+                % ...good idea
+%                 try
+%                     if strcmp(holoRequest.channel,'green')
+%                         parametres.channel = 1;
+%                     elseif strcmp(holoRequest.channel,'red')
+%                         parametres.channel = 2;
+%                     end;
+%                 end
+                
+            elseif strcmp(holoRequest.hologram_config, 'filledCircle'); 
+                disp('You have rquested Filled Cirlce holograms');
+                parametres.OnlyCenterDotHologram = 0;
+                disp('WARNING: NOT COMPATIBLE WITH 3DSHOT')
+%             elseif strcmp(holoRequest.hologram_config, 'edge');  %obsolete - marked for deletion - ARM 
+%                 disp('You have rquested Edge Only holograms');  
+%                 parametres.ShrinkFactorList = {0};
+%                 parametres.DonutFactorList = {0.9};
+%             elseif strcmp(holoRequest.hologram_config, 'custom');  %obsolete - marked for deletions
+%                 disp('You have requested Custom holograms');
+%                 parametres.ShrinkFactorList = {holoRequest.shrinking_factor};
+%                 parametres.DonutFactorList = {holoRequest.donut_factor};
+%                 if holoRequest.centroid_diameter == 0;
+%                     disp('You want something shaped like the ROI');
+%                 else
+%                     disp(strcat('You want a sphere of radius  -- ',int2str(holoRequest.centroid_diameter))); parametres.CentroidDiameter = {holoRequest.centroid_diameter};
+%                 end;
+            else disp('Something is wrong with your request - unknown error - code 666');
                 set(handles.statusText,'String','Bullshit something is wrong with your request')
                 guidata(ListenerForHoloRequest,handles)
             end
             
             
             
+            % obsolete - marked for deletion arm
+%             try
+%                 if holoRequest.excludeCenter == 1;
+%                     parametres.ExcludeCenter = holoRequest.excludeRadius;
+%                 else
+%                     parametres.ExcludeCenter = 0;
+%                 end;
+%             end;
             
-            try    if holoRequest.excludeCenter == 1 ;parametres.ExcludeCenter = holoRequest.excludeRadius; else parametres.ExcludeCenter = 0; end;end;
-            
-            if holoRequest.grid == 0 && holoRequest.xyz_map == 0 && numel(holoRequest.rois) <= 1 && strcmp(holoRequest.hologram_config, 'paramaterSpace') ==0; %%%%%
-                disp('You have requested a single hologram'); disp('The ROIs to be displayed are :')
-                set(handles.statusText,'String',strcat('Single Holo requested: ROIs requested are ',num2str(holoRequest.rois{1})));
-                guidata(ListenerForHoloRequest,handles)
+            if holoRequest.grid == 0 && holoRequest.xyz_map == 0 && numel(holoRequest.rois) <= 1 && strcmp(holoRequest.hologram_config, 'paramaterSpace') == 0; %Case: single hologram only
+            %case: no grid, no map, only 1 ROI requested, parameter space
+            %map not requested - this code handles a holorequest containing
+            %a request for only 1 hologram, not a sequence
+                
+                disp('You have requested a single hologram'); 
+                disp('The ROIs to be displayed are :')
+                
+                %set(handles.statusText,'String',strcat('Single Holo requested: ROIs requested are ',num2str(holoRequest.rois{1})));
+                
+                guidata(ListenerForHoloRequest,handles) %these are necessary to update text on gui..do we need this?
+                
                 if numel(holoRequest.rois) == 0; disp('All ROIS'); else  disp(holoRequest.rois{1}); end;
                 
                 disp('Now compiling hologram')
                 set(handles.statusText,'String','Now compiling hologram')
-                guidata(ListenerForHoloRequest,handles)
-                if screenon == 0; screenon = 1; [w,rect]=Screen('OpenWindow',SLM.ScreenID,[0 0 0]); end;
-                ROICount = numel(ROIdata.rois);
-                if numel(holoRequest.rois) == 1; PickROIS = holoRequest.rois{1}; else PickROIS = 1:length(ROIdata.rois); end;
+                
+                guidata(ListenerForHoloRequest,handles) %these are necessary to update text on gui..do we need this?
+                
+                % turn on SLM Screen
+                if screenon == 0;
+                    screenon = 1;
+                    [w,rect]=Screen('OpenWindow',SLM.ScreenID,[0 0 0]); 
+                end;
+                
+                ROICount = numel(ROIdata.rois);  %not necessary
+                
+                %this if/else statement is already handled in the
+                %conditional above - the else should never be called! - ARM
+                if numel(holoRequest.rois) == 1;
+                    PickROIS = holoRequest.rois{1}; 
+                else
+                    PickROIS = 1:length(ROIdata.rois);
+                end;
                 
                 [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
+              
+                               
                 f = figure(1);
-                subplot(2,1,1);pcolor(double(Hologram));shading flat;title('Phase mask'); maskref = Mask{1}-Mask{1}; for jjji = 1:numel(Mask); maskref = max(maskref,Mask{jjji}); end;axis image;
-                subplot(2,1,2); pcolor(double(maskref));shading flat;title('Targeted ROIs');axis image;
-                t = zeros(1,1); hhh = Hologram; img = [hhh hhh hhh]; t=Screen('MakeTexture',w,img); Screen('DrawTexture', w, t); Screen('Flip', w);
+                subplot(2,1,1);
+                pcolor(double(Hologram)); shading flat; title('Phase mask'); 
+                maskref = Mask{1}-Mask{1}; 
+                for jjji = 1:numel(Mask);
+                    maskref = max(maskref,Mask{jjji}); 
+                end;
+                axis image;
+                subplot(2,1,2); 
+                pcolor(double(maskref)); shading flat; title('Targeted ROIs'); axis image;
+                t = zeros(1,1); hhh = Hologram; img = [hhh hhh hhh]; 
+                t=Screen('MakeTexture',w,img); 
+                Screen('DrawTexture', w, t); 
+                Screen('Flip', w);
                 disp('Hologram is now on the SLM');disp('--');disp('--');
                 set(handles.statusText,'String','Hologram is now on the SLM')
                 
-                if handles.DoHandshake == 1;
+                
+                if handles.DoHandshake == 1;  %if handshake enabled...
                     currentHolo = holoRequest.rois{1};
                     ROIsON = holoRequest.rois{1};
                     set(handles.currentROI,'string',num2str(currentHolo));

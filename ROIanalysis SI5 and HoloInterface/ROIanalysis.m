@@ -444,7 +444,7 @@ gd.ROI.showDepth = uicontrol(...
     'Parent',               gd.ROI.panel,...
     'Units',                'normalized',...
     'Position',             [.26,.8,.25,.025],...
-    'Value',                false,...
+    'Value',                true,...
     'Callback',             @(hObject,eventdata)replotaxes(hObject,eventdata,guidata(hObject)),...
     'Enable',               'off');
 % show ID numbers toggle
@@ -2228,49 +2228,73 @@ function sendToHolostim(hObject,eventdata,gd)
 
 if gd.Internal.ROIs.n>0;
     
-guidata(hObject, gd);
-set(gcf, 'pointer', 'watch')
-gd = CreateROIMasks(gd);
-gd = CreateROINeuropilMasks(gd);
-ROIdata=gd.ROIs; % pull out ROI information
-ROIdata.rois = rmfield(ROIdata.rois, {'handle','beingEdited'}); % remove fields used for editing ROIs
+    guidata(hObject, gd);
+    set(gcf, 'pointer', 'watch')
+    gd = CreateROIMasks(gd);
+    gd = CreateROINeuropilMasks(gd);
+    ROIdata=gd.ROIs; % pull out ROI information
+    ROIdata.rois = rmfield(ROIdata.rois, {'handle','beingEdited'}); % remove fields used for editing ROIs
+    
+    
+    
+    VariablesToSave = {'ROIdata'};
+    if gd.state.dataAvailable
+        ImagesInfo = gd.Images.info;
+        VariablesToSave = [VariablesToSave,{'ImagesInfo'}];
+    end
+    
+    drawnow
+    
+    
+    % ARM - Depricated when we switched to optotune 3D alignment]
+    
+    %if gd.Holo.centerStack == 1;
+    %    k=(ImagesInfo.Depth*ImagesInfo.ZStepSize);
+    %    ZVector=[(-k/2):ImagesInfo.ZStepSize:(k/2)];
+    %else
+    %    ZVector=[0:ImagesInfo.ZStepSize:ImagesInfo.Depth*ImagesInfo.ZStepSize];
+    %end;
+    %ImagesInfo.ZVector = ZVector;
+    
+    
+    %tack the sutter value onto each ROI
+    %for n =1:numel(ROIdata.rois);
+    %    ROIdata.rois(n).Zlevel = ZVector(ROIdata.rois(n).depth);
+    %end;
+    %ROIdata=segmentImages(ROIdata,gd);
+    
+    %save variablestosave to holorequest listener folder and the copy
+    %folder that the DAQ listens to
+    
+    %Replacment for Z / optotune - ARM 1/6/17
+    
+    
+    
+    meta = ScanImageTiffReader(ImagesInfo.files.FullFilename).metadata();
+    SI = parseSI5Header(meta);
 
+    OptotuneDepths = SI.SI.hStackManager.zs;
+    
+    for j=1:numel(ROIdata.rois);
+        ROIdata.rois(j).OptotuneDepth=OptotuneDepths(ROIdata.rois(1).depth);
+    end
+    
+    %remove erroneous info from ImagesInfo and include the metadata for
+    %future downstream use
+    ImagesInfo=rmfield(ImagesInfo,'FrameRate');
+    ImagesInfo=rmfield(ImagesInfo,'ZStepSize');
+    ImagesInfo.MetData=SI;
 
-
-VariablesToSave = {'ROIdata'};
-if gd.state.dataAvailable
-    ImagesInfo = gd.Images.info;
-    VariablesToSave = [VariablesToSave,{'ImagesInfo'}];
-end
-
-drawnow
-
-
-
-if gd.Holo.centerStack == 1;
-    k=(ImagesInfo.Depth*ImagesInfo.ZStepSize);    
-    ZVector=[(-k/2):ImagesInfo.ZStepSize:(k/2)];
+    locations = SatsumaRigFile();
+    save([locations.HoloRequest 'ROIdata.mat'],VariablesToSave{:},'-mat')
+    save([locations.HoloRequest_DAQ 'ROIdata.mat'],VariablesToSave{:},'-mat')
+    set(gcf, 'pointer', 'arrow')
+    
+    
+    HoloInterface3
+    
 else
-    ZVector=[0:ImagesInfo.ZStepSize:ImagesInfo.Depth*ImagesInfo.ZStepSize];    
-end;
-ImagesInfo.ZVector = ZVector;
-
-
-%tack the sutter value onto each ROI
-for n =1:numel(ROIdata.rois);
-    ROIdata.rois(n).Zlevel = ZVector(ROIdata.rois(n).depth);
-end;
-ROIdata=segmentImages(ROIdata,gd);
-locations = SatsumaRigFile();
-save([locations.HoloRequest 'ROIdata.mat'],VariablesToSave{:},'-mat')
-save([locations.HoloRequest_DAQ 'ROIdata.mat'],VariablesToSave{:},'-mat')
-set(gcf, 'pointer', 'arrow')
-
-
-HoloInterface
-
-else
-    errordlg('select at least one ROI, moron')
+    errordlg('select at least one ROI, genius')
 end;
 
 

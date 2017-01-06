@@ -53,15 +53,15 @@ function ListenerForHoloRequest_OpeningFcn(hObject, eventdata, handles, varargin
 % varargin   command line arguments to ListenerForHoloRequest (see VARARGIN)
 
 % Choose default command line output for ListenerForHoloRequest
-locations=SatsumaRigFile();
-handles.output = hObject;
-handles.DoHandshake = 1;
-handles.save=0;
-handles.writeROIsON = 0;
-handles.defaultDir = locations.saveSequence;
-handles.currentDir = handles.defaultDir;
-handles.saveName = [];
-handles.useLoad = 1;
+locations=SatsumaRigFile();  %import locations from the Rig Location File
+handles.output = hObject;   
+handles.DoHandshake = 1;  %default handshake with DAQ is enabled
+handles.save=0;           %default not saving the list of compiled holograms
+handles.writeROIsON = 0;  %default do not write
+handles.defaultDir = locations.saveSequence; %load default save directory to handles
+handles.currentDir = handles.defaultDir;     %set currentDir to default save dir
+handles.saveName = [];                       %init savename
+handles.useLoad = 1;                         %Set defaults to use loaded sequence if it exists
 % Update handles structure
 guidata(hObject, handles);
 
@@ -85,14 +85,15 @@ function start_Callback(hObject, eventdata, handles)
 % hObject    handle to start (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-set(handles.listening,'Value',1);  %set listening checkbox to listen
-handles.abort=0;
-set(handles.abortToggle,'Value',0)
-RUNME_Listener_ARM(handles);
 
-%handles.output = START THE LISTENERFORHOLOREQUEST!!!!!!!!!!!!!!!!!!(handles.output)
-%check handles.output.DoHandshake to determine if yoiu're writing current
-%ROI
+%Function runs on initilization of the start callback
+
+set(handles.listening,'Value',1);  %set listening checkbox to listen
+handles.abort=0;                   %disable abort
+set(handles.abortToggle,'Value',0);%toggle abort to off
+RUNME_Listener_ARM(handles);       %meat of the Listener / Parser function
+
+
 
 % --- Executes on button press in abort.
 function abort_Callback(hObject, eventdata, handles)

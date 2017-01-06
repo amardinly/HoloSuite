@@ -58,12 +58,12 @@ handles.selectAllROIs=0;
 handles.generateGrid=0;
 handles.generateXYZ=0;
 handles.objective = 20;
-handles.zoom = 2;
+handles.zoom = 1.5;
 handles.xoffset = 0;
 handles.yoffset = 0;
 handles.zoffset = 0;
 handles.hologram_config = 'DLS';
-handles.sphereDiameter = 12;
+handles.sphereDiameter = 20;
 handles.reload  = 0;
 handles.xPoints = 5;
 handles.yPoints = 5;
@@ -172,27 +172,9 @@ function ROIsET_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x=get(hObject,'String');
-
-
-
-rois = str2CellArrayParser(x);
-%rois = {[1],[1:10],[1:25],[1:50],[1:75],[1:100]};
-%errordlg('string parsers unuseable for this exp - check line 179')
-
-
-if handles.makeSeq==1;
-    k = rois{1};
-    v = rois{length(rois)};
-    
-    i=1;
-    for n = k:v;
-        rois(i)={n};
-        i = i+1;
-    end;
-    
-end;
-
+rois=HI3Parse(x);
 handles.rois = rois;
+
 
 guidata(hObject, handles);
 % Hints: get(hObject,'String') returns contents of ROIsET as text
@@ -600,7 +582,7 @@ if (handles.objective == 20) && handles.zoom == 1
 elseif (handles.objective == 20) && handles.zoom == 2
     lx= 400;
     ly= 400;
-elseif (handles.objective == 20) && handles.zoom == 15
+elseif (handles.objective == 20) && handles.zoom == 1.5
     lx= 600;
     ly= 600;
 elseif (handles.objective == 20) && handles.zoom == 4

@@ -1,5 +1,5 @@
 function [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest)
-
+%Original compile Hologram
 
 if isfield(ImagesInfo,'ZStepSize') == 1;
      NeuronData.StackSpacing = ImagesInfo.ZStepSize;
