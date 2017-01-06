@@ -188,7 +188,8 @@ switch LoadType
                         Images = ScanImageTiffReader(ImageFiles{index}).data();
                         Images = reshape(Images,[Config.Width,Config.Height,Config.Channels,Config.Depth,Config.Frames,]);
                         Images = permute(Images,[2 1 4 3 5]);
-                        ;
+                  
+                        
                         
                         
                     case '.imgs'
