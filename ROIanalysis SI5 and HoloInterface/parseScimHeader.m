@@ -58,7 +58,7 @@ else %SI5.2
     
     config.Height = header.SI.hRoiManager.linesPerFrame;
     config.Width = header.SI.hRoiManager.pixelsPerLine;
-    config.Depth = header.SI.hStackManager.numSlices;
+    config.Depth = numel(header.SI.hStackManager.zs);%header.SI.hStackManager.numSlices;
     config.ZStepSize = header.SI.hStackManager.stackZStepSize;
     config.Channels = size(header.SI.hChannels.channelSave,1);
     config.FrameRate = 1 / header.SI.hRoiManager.scanFramePeriod;
