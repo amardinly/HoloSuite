@@ -1,6 +1,6 @@
-function [Hologram,Mask] = function_ComputeHologram( parametres, SLM, Setup)
+function [Hologram,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup)
 
-
+ErrorCode=0;
 % 10 07 2016, we are including the option for multiple levels of power in ROIS 
 
 
@@ -97,7 +97,8 @@ for ii = 1:numel(GetROIList)
         if center(2)<0 ||center(2)>1||center(1)<0 ||center(1)>1
             disp('(((WARNING Requested diffraction limited spot is out of physical range)))')
             errordlg('(((WARNING Requested diffraction limited spot is out of physical range)))')
-            return;
+         %   return;
+         ErrorCode=-1;
 
         else
             TheMask(round(LLY*center(2)),round(LLX*center(1)))=1;
