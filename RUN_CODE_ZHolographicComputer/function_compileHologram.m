@@ -1,4 +1,4 @@
-function [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest)
+function [ Hologram, Mask,ErrorCode ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest)
 
 
 % ARM - mark for deletion - old Z calib, pre-optotune

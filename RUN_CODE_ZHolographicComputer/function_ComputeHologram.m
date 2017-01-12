@@ -96,7 +96,7 @@ for ii = 1:numel(GetROIList)
         TheMask = zeros(LLY,LLX);
         if center(2)<0 ||center(2)>1||center(1)<0 ||center(1)>1
             disp('(((WARNING Requested diffraction limited spot is out of physical range)))')
-            errordlg('(((WARNING Requested diffraction limited spot is out of physical range)))')
+        %    errordlg('(((WARNING Requested diffraction limited spot is out of physical range)))')
          %   return;
          ErrorCode=-1;
 
@@ -131,6 +131,8 @@ for ii = 1:numel(GetROIList)
         InnerROI = ROI;
         if min(ROI(:,1))<0 ||min(ROI(:,2))<0||max(ROI(:,2))<0 ||max(ROI(:,1))>1
             disp('(((WARNING some points of the Requested ROI is out of physical range)))')
+            ErrorCode=-1;
+            
         end
         TheMask=poly2mask( LLX*ROI(:,1),LLY*(ROI(:,2)),Subsampling*SLM.Y, Subsampling*SLM.X);
         EdgeMask = 0;
