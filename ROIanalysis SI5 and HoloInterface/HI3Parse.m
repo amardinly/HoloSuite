@@ -31,7 +31,12 @@ for j=1:length(I)+1;   %for n commas + 1
    if strmatch(f(1),'[');
         outmat{k}=eval(f);          %matrix is store in a cell via eval
    else
-       miniSequence=eval(f);
+       try
+       miniSequence=eval(f);  %case '1:4'
+       catch
+       miniSequence=str2num(f); %case '1 2 3 4'
+       end
+       
        for u=1:numel(miniSequence);
            outmat{k}=miniSequence(u);
            k=k+1;
