@@ -9,7 +9,7 @@ function rect = plotBoundingBox(optotuneDepths,zoom)
 %specified will load zoom 1.5
 
 %% Check Input Args and make full path to interpolant
-if optotuneDepth>50 || optotuneDepth<0;
+if optotuneDepths>50 || optotuneDepths<0;
     errordlg('Specifiy optotune depth between 0 and 50, you hampster faced butt')
     return;
 end
@@ -26,7 +26,7 @@ elseif nargin==2
     end
     
     fullPathToInterpolant=['Z:\holography\Calibration Parameters\20X_Objective_Zoom_' num2str(zoom) '_XYZ_Calibration_PointsOPTOTUNE.mat'];
-    
+   
 else
     errordlg('too many input arguments, asshole');
     return;
