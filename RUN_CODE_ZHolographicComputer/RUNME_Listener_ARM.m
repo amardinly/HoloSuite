@@ -382,10 +382,16 @@ if numel(holoRequest.rois)>1 && holoRequest.grid == 0 && holoRequest.xyz_map == 
         handles.writeROIsON = 1;
         for iiij = 1:numel(holoRequest.rois)
             PickROIS = holoRequest.rois{iiij};
-            [ Hologram, Mask ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
+            [ Hologram, Mask, ErrorCode ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest );
             display(strcat('now computing #',int2str(iiij)));
             MySequence{iiij} = Hologram;
             MySequenceMask{iiij} = Mask;
+
+            if ErrorCode==-1;
+                disp(['WARNING: Hologram #' int2str(iiij) ' ,containing ROI(s) #' num2str(PickROIS) ' is out of physical range!']);
+                errordlg(['WARNING: Hologram #' int2str(iiij) ' ,containing ROI(s) #' num2str(PickROIS) ' is out of physical range!']);
+
+            end
             
         end
         
