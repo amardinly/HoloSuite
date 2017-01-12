@@ -100,56 +100,56 @@ Interpolated(1,iii) = GetPoint.X;Interpolated(2,iii) = GetPoint.Y;Interpolated(3
 end
 end
 
-
+%%
 if option == 4
-LP = 6;
-Pdim = 3;
-ZPdim=3;
-Conversion.polyZ = polyfit(XYZ_Points.ASK.Z,XYZ_Points.GET.Z,ZPdim);
-y1 = polyval(Conversion.polyZ,XYZ_Points.ASK.Z);
-LN = numel(XYZ_Points.ASK.X);
-
-Conversion.PX = zeros(Pdim+1,LP);
-Conversion.PY = zeros(Pdim+1,LP);
-GX = linspace(0,0,LP);
-GY = linspace(0,0,LP);
-AX = linspace(0,0,LP);
-AY = linspace(0,0,LP);
-for j = 1:LP;  
-Picks = j:LP:LN;
-VX = XYZ_Points.ASK.X(Picks);
-VY = XYZ_Points.ASK.Y(Picks);
-VZ = XYZ_Points.ASK.Z(Picks);
-GX(j) = mean(XYZ_Points.GET.X(Picks));
-GY(j) = mean(XYZ_Points.GET.Y(Picks));
-Conversion.PX(:,j) = polyfit(VZ,VX,Pdim)';
-Conversion.PY(:,j) = polyfit(VZ,VY,Pdim)';
-end
-
-[~,b] = size(AskPointList);
-Interpolated = zeros(3,b);
-for kk = 1:b
-ZASKPOINT = AskPointList(3,kk);
-XASKPOINT = AskPointList(1,kk);
-YASKPOINT = AskPointList(2,kk);
-
-Interpolated(3,kk) = polyval(Conversion.polyZ,ZASKPOINT);
-AX = linspace(0,0,LP);
-AY = linspace(0,0,LP);
-for j = 1:LP; 
-AX(j) = polyval(Conversion.PX(:,j),ZASKPOINT);  
-AY(j) = polyval(Conversion.PY(:,j),ZASKPOINT);  
-end
-[d,Z,TF] = procrustes([GX; GY]',[AX ;AY]');
-RefXY = TF.b*[AX ;AY]'*TF.T + TF.c;
-GetXY = TF.b*[XASKPOINT;YASKPOINT]'*TF.T + TF.c(1,:);
-
-Interpolated(1,kk) = GetXY(:,1);
-Interpolated(2,kk) = GetXY(:,2);
-
-end
-
-
+    LP = 6;
+    Pdim = 3;
+    ZPdim=3;
+    Conversion.polyZ = polyfit(XYZ_Points.ASK.Z,XYZ_Points.GET.Z,ZPdim);
+    y1 = polyval(Conversion.polyZ,XYZ_Points.ASK.Z);
+    LN = numel(XYZ_Points.ASK.X);
+    
+    Conversion.PX = zeros(Pdim+1,LP);
+    Conversion.PY = zeros(Pdim+1,LP);
+    GX = linspace(0,0,LP);
+    GY = linspace(0,0,LP);
+    AX = linspace(0,0,LP);
+    AY = linspace(0,0,LP);
+    for j = 1:LP;
+        Picks = j:LP:LN;
+        VX = XYZ_Points.ASK.X(Picks);
+        VY = XYZ_Points.ASK.Y(Picks);
+        VZ = XYZ_Points.ASK.Z(Picks);
+        GX(j) = mean(XYZ_Points.GET.X(Picks));
+        GY(j) = mean(XYZ_Points.GET.Y(Picks));
+        Conversion.PX(:,j) = polyfit(VZ,VX,Pdim)';
+        Conversion.PY(:,j) = polyfit(VZ,VY,Pdim)';
+    end
+    
+    [~,b] = size(AskPointList);
+    Interpolated = zeros(3,b);
+    for kk = 1:b
+        ZASKPOINT = AskPointList(3,kk);
+        XASKPOINT = AskPointList(1,kk);
+        YASKPOINT = AskPointList(2,kk);
+        
+        Interpolated(3,kk) = polyval(Conversion.polyZ,ZASKPOINT);
+        AX = linspace(0,0,LP);
+        AY = linspace(0,0,LP);
+        for j = 1:LP;
+            AX(j) = polyval(Conversion.PX(:,j),ZASKPOINT);
+            AY(j) = polyval(Conversion.PY(:,j),ZASKPOINT);
+        end
+        [d,Z,TF] = procrustes([GX; GY]',[AX ;AY]');
+        RefXY = TF.b*[AX ;AY]'*TF.T + TF.c;
+        GetXY = TF.b*[XASKPOINT;YASKPOINT]'*TF.T + TF.c(1,:);
+        
+        Interpolated(1,kk) = GetXY(:,1);
+        Interpolated(2,kk) = GetXY(:,2);
+        
+    end
+    
+    
 end
 
 
