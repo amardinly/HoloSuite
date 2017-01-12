@@ -41,7 +41,7 @@ end
 
 parametres.GetROIList = GETROI;
 
-[ Hologram,Mask] = function_ComputeHologram( parametres, SLM, Setup  );
+[ Hologram,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup  );
 
 
 end
