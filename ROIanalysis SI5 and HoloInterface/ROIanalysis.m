@@ -1536,6 +1536,25 @@ else
         'Max',          1,...
         'Value',        1);
 end
+
+% Determine if you should reset target area
+if ~isfield(gd,'Holo') || ~isfield(gd.Holo,'optotuneDepths') || ~isfield(gd.Holo,'zoom')
+    gd.Holo.recalcTargetArea =1;
+else
+    meta = ScanImageTiffReader(gd.Images.info.files.FullFilename).metadata();
+    SI = parseSI5Header(meta);
+    
+    newOptotuneDepths= SI.SI.hStackManager.zs;
+    newZoom= SI.SI.hRoiManager.scanZoomFactor;
+    if any( numel(newOptotuneDepths)~=numel(gd.Holo.optotuneDepths),...
+            any(newOptotuneDepths~=gd.Holo.optotuneDepths),...
+            newZoom ~= gd.Holo.zoom)
+        gd.Holo.zoom = newZoom;
+        gd.Holo.optotuneDepths = newOptotuneDepths;
+        gd.Holo.recalcTargetArea =1;
+    end
+end
+
 updateGUI(gd)
 plotmainaxes(1,1,gd); % Display First Image of Stack
 
@@ -2339,13 +2358,13 @@ if (get(hObject,'Value') == get(hObject,'Max'))
         SI = parseSI5Header(meta);
         gd.Holo.optotuneDepths = SI.SI.hStackManager.zs;
         
-        zoom = SI.SI.hRoiManager.scanZoomFactor;
+        gd.Holo.zoom = SI.SI.hRoiManager.scanZoomFactor;
         
         try
-        gd.Holo.targetRect = plotBoundingBox(gd.Holo.optotuneDepths,zoom);
+        gd.Holo.targetRect = plotBoundingBox(gd.Holo.optotuneDepths,gd.Holo.zoom);
         catch
             errordlg({'Error in Display Target Area (ROIanalysis)', 'Could not plot bounding box.', ['Detected Depths: ' ...
-                num2str(gd.Holo.optotuneDepths) '.'], ['Detected Zoom: ' num2str(zoom)]})
+                num2str(gd.Holo.optotuneDepths) '.'], ['Detected Zoom: ' num2str(gd.Holo.zoom)]})
         end
         
         gd.Holo.recalcTargetArea =0;
