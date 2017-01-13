@@ -628,17 +628,25 @@ gd.Holo.send = uicontrol(...
     'BackgroundColor',      [.3,.3,.3],...
     'ForegroundColor',      [1,1,1]);
 
-gd.LoadExperiment.showRunSpeed = uicontrol(...
+% removed because we really don't use centered stack anymore
+% gd.LoadExperiment.showRunSpeed = uicontrol(...
+%     'Style',                'checkbox',...
+%     'String',               'Centered Stack?',...
+%     'Parent',               gd.ROI.panel,...
+%     'Units',                'normalized',...
+%     'Position',             [.01,.3,.5,.1],...
+%     'Enable',               'on',...
+%     'Callback',             @(hObject,eventdata)centerStack(hObject,eventdata,guidata(hObject)));
+
+
+gd.Holo.displayTarget = uicontrol(...
     'Style',                'checkbox',...
-    'String',               'Centered Stack?',...
+    'String',               'Display Targetable Area',...
     'Parent',               gd.ROI.panel,...
     'Units',                'normalized',...
     'Position',             [.01,.3,.5,.1],...
     'Enable',               'on',...
-    'Callback',             @(hObject,eventdata)centerStack(hObject,eventdata,guidata(hObject)));
-
-
-
+    'Callback',             @(hObject,eventdata)dispTargetArea(hObject,eventdata,guidata(hObject)));
 
 
 
@@ -1252,6 +1260,16 @@ if get(gd.LoadExperiment.showStimMark, 'Value')
         %         hold off
     end
 end
+
+%display holographically targetable area
+if isfield(gd.Holo,'dispTarget') && gd.Holo.dispTarget==1
+    rectangle(...
+        'Position',gd.Holo.targetRect(depthIndex,:),...
+        'EdgeColor','r',...
+        'LineWidth',1,...
+        'Curvature',0.5);
+end
+
 
 guidata(gd.fig,gd); % update guidata
 updateGUI(gd);
@@ -2308,6 +2326,39 @@ end
 
 guidata(hObject,gd);
 
+function dispTargetArea(hObject,eventdata,gd)
+if (get(hObject,'Value') == get(hObject,'Max'))
+	gd.Holo.dispTarget=1;
+    %get list of depths
+    %convert to rectangle
+    if ~isfield(gd.Holo,'optotuneDepths') ||...
+            ~isfield(gd.Holo,'targetRect') ||...
+            gd.Holo.recalcTargetArea ==1
+        
+        meta = ScanImageTiffReader(gd.Images.info.files.FullFilename).metadata();
+        SI = parseSI5Header(meta);
+        gd.Holo.optotuneDepths = SI.SI.hStackManager.zs;
+        
+        zoom = SI.SI.hRoiManager.scanZoomFactor;
+        
+        try
+        gd.Holo.targetRect = plotBoundingBox(gd.Holo.optotuneDepths,zoom);
+        catch
+            errordlg({'Error in Display Target Area (ROIanalysis)', 'Could not plot bounding box.', ['Detected Depths: ' ...
+                num2str(gd.Holo.optotuneDepths) '.'], ['Detected Zoom: ' num2str(zoom)]})
+        end
+        
+        gd.Holo.recalcTargetArea =0;
+    end
+    
+    
+    plotmainaxes([],[],gd);
+else
+	gd.Holo.dispTarget=0;
+    plotmainaxes([],[],gd);
+end
+
+guidata(hObject,gd);
 
 function ROIdata=segmentImages(ROIdata,gd)
 

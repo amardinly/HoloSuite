@@ -9,7 +9,7 @@ function rect = plotBoundingBox(optotuneDepths,zoom)
 %specified will load zoom 1.5
 
 %% Check Input Args and make full path to interpolant
-if optotuneDepths>50 || optotuneDepths<0;
+if any(optotuneDepths>50) || any(optotuneDepths<0)
     errordlg('Specifiy optotune depth between 0 and 50, you hampster faced butt')
     return;
 end
