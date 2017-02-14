@@ -604,6 +604,27 @@ end
         locations = SatsumaRigFile();
         load([locations.HoloRequest 'ROIdata.mat']);
         
+        
+       disp('warning: optotune depth hack enabled.  check line 608 to disable')
+       %optotnue depth out of alignment .  we cant figure it out.  this is
+       %easier than actually sciencing.
+       for u = 1:numel(ROIdata.rois);
+         if ROIdata.rois(u).OptotuneDepth==17;
+               ROIdata.rois(u).OptotuneDepth=23; 
+         elseif ROIdata.rois(u).OptotuneDepth==28;
+               ROIdata.rois(u).OptotuneDepth=33;   
+         elseif ROIdata.rois(u).OptotuneDepth==36;
+               ROIdata.rois(u).OptotuneDepth=39;
+         elseif  ROIdata.rois(u).OptotuneDepth~=0;
+             errordlg('WARNING: not a calibrated optotune depth! Z interp likely to fail!')
+             return;
+         end
+       end
+       
+             
+               
+        
+        
         for j = 1:numel(ROIdata.rois);
        
             ROIdata.rois(j).vertices=[];
