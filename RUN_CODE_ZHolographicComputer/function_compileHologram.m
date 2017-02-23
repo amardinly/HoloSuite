@@ -1,5 +1,5 @@
-function [ Hologram, Mask,ErrorCode ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest)
-
+function [ Hologram, Mask, DiffractionEfficiency ] = function_compileHologram( parametres, SLM, Setup,XYZ_Points,ImagesInfo,ROIdata,PickROIS,holoRequest)
+  
 
 % ARM - mark for deletion - old Z calib, pre-optotune
 % if isfield(ImagesInfo,'ZStepSize') == 1;
@@ -41,7 +41,9 @@ end
 
 parametres.GetROIList = GETROI;
 
-[ Hologram,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup  );
+[HologramData,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup  );
+[ Hologram, DiffractionEfficiency ] = function_Better_Holograms( SLM, Setup,HologramData);
+
 
 
 end

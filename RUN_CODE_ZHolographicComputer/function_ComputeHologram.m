@@ -1,4 +1,4 @@
-function [Hologram,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup)
+function [ExportMe,Mask,ErrorCode] = function_ComputeHologram( parametres, SLM, Setup)
 
 ErrorCode=0;
 % 10 07 2016, we are including the option for multiple levels of power in ROIS 
@@ -70,7 +70,7 @@ PixelSize.Y= (SLM.FocalFS*Setup.lambda/(SLM.pixelsizeY ))/LLY;
 
 for ii = 1:numel(GetROIList)
     try 
-    energylevel = sqrt(GetpowerMultiplier(ii));%NICO 12012016 EDIT
+    energylevel = sqrt(GetpowerMultiplier(ii));%NICO 12012016 EDIT - We are talking Intensity level here... 
     catch     
     energylevel = 1;    
     end
@@ -171,111 +171,36 @@ if numel(GetROIList)>=2
     end
 end
 
+[DepthVector,order] = sort(DepthVector);
+for i = 1:numel(order)
+ExportMe.Mask{i} = Mask{order(i)};
+end
+ExportMe.Depth = DepthVector;
+
 Mask = {};
 DepthVector = ShortDepthVector;
 Mask = ShortMask;
 if displaydetails == 1; disp(strcat('We have extracted a solution in - ',int2str(numel(ShortDepthVector)),'- Masks')); end;
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Here, secondary step-- Apply patterning ot the masks
-if ApplyPattern == 1;
-    %do apply patterns here
-    
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-if numel(Mask) == 1
-    
-    phase = 2*pi*RandomizePhase*rand(LLY,LLX);
-    
-    Z = DepthVector(1);
-    for i = 1:NCycles
-        %First Defocus image
-        DefocusImage = function_propagate(Mask{1}.*exp(1i*phase),Setup.lambda,Z,PixelSize.Y,PixelSize.X);
-        %Take FFT2 and keep angle
-        FourierPhaseMask = angle(fft2(fftshift(DefocusImage)));
-        %Compute Hologram
-        Hologram = (exp(1i*(fftshift(FourierPhaseMask))));
-        %Take Inverse FT
-        RealHologram = fftshift(ifft2(Hologram));
-        RefocusImage = function_propagate(RealHologram,Setup.lambda,-Z,PixelSize.Y,PixelSize.X);
-        %Update Phase
-        phase = angle(RefocusImage);
-    end
-    
-    %Now Resize Hologram
-    bX = floor(LLX/2-SLM.X/2)+1;
-    bY = floor(LLY/2-SLM.Y/2)+1;
-    eX = bX+SLM.X-1;
-    eY = bY+SLM.Y-1;
-    %Scale down to SLM Size
-    Hologram = Hologram(bY:eY,bX:eX);
-    DisplayMask = Mask{1};
-else
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%
-    %Now treat the case where hologram are of multiple locations
-    for iiii = 1:numel(Mask)
-        if RandomizePhase == 1
-            phase = 2*pi*rand(LLY,LLX);
-        else
-            phase = zeros(LLY,LLX);
-        end
-        Z = DepthVector(iiii);
-        for i = 1:NCycles
-            %First Defocus image
-            DefocusImage = function_propagate(Mask{iiii}.*exp(1i*phase),Setup.lambda,Z,PixelSize.Y,PixelSize.X);
-            %Take FFT2 and keep angle
-            FourierPhaseMask = angle(fft2(fftshift(DefocusImage)));
-            %Compute Hologram
-            Hologramtemp = (exp(1i*(fftshift(FourierPhaseMask))));
-            %Take Inverse FT
-            RealHologram = fftshift(ifft2(Hologramtemp));
-            RefocusImage = function_propagate(RealHologram,Setup.lambda,-Z,PixelSize.Y,PixelSize.X);
-            %Update Phase
-            phase = angle(RefocusImage);
-        end
-        
-        %Now Resize Hologram
-        bX = floor(LLX/2-SLM.X/2)+1;
-        bY = floor(LLY/2-SLM.Y/2)+1;
-        eX = bX+SLM.X-1;
-        eY = bY+SLM.Y-1;
-        %Scale down to SLM Size
-        Hologramtemp = Hologramtemp(bY:eY,bX:eX);
-        TheHolos{iiii} = Hologramtemp;
-    end
-    Hologram = Hologramtemp-Hologramtemp;
-    
-    for iiii = 1:numel(Mask)
-        Hologram = Hologram+ TheHolos{iiii};
-    end
-    %Come up with a better method !!
-    %%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    %Display Mask is just the mask
-    DisplayMask =  Mask{1};
-    for j = 2:numel(Mask)
-        DisplayMask = DisplayMask+Mask{j};
-    end
+[ShortDepthVector,order] = sort(ShortDepthVector);
+for i = 1:numel(order)
+ExportMe.ShortMask{i} = Mask{order(i)};
 end
 
-%Now removing low order light by scrambling circle on SLM
-if ExcludeCenter>0
-    [LLLX,LLLY] = size(Hologram);
-    cx=round(LLLX/2);cy=round(LLLY/2);ix=LLLX;iy=LLLY;r=ExcludeCenter;
-    [x,y]=meshgrid(-(cx-1):(ix-cx),-(cy-1):(iy-cy));
-    c_mask=((x.^2+y.^2)<=r^2);
-    
-    themaskcut = double(c_mask)';
-    themaskkeep = 1-double(c_mask)';
-    Hologram =  (themaskkeep.*Hologram)+(themaskcut.*exp(1i*2*pi*rand(LLLX,LLLY)));
-else
-end
+ExportMe.ShortDepth = ShortDepthVector;
 
-%Now converting hologram complex format to real format
-Hologram = uint8(SLM.Pixelmax*mod(angle(Hologram)/(2*pi),1));
+
+ExportMe.RandomizePhase = RandomizePhase;
+ExportMe.Subsampling= Subsampling;
+ExportMe.ExcludeCenter = ExcludeCenter;
+   try 
+    ExportMe.GetpowerMultiplier=GetpowerMultiplier;
+    catch     
+    ExportMe.GetpowerMultiplier = linspace(1,1,numel(ExportMe.Depth)) ;  
+   end
+    
+   
+   
 end
 

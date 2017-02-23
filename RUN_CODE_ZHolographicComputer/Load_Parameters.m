@@ -51,7 +51,7 @@ SLM.pixelsizeX = 20;                                                            
 SLM.pixelsizeY = 20;                                                                    %Pixel Sixe along Y axis, In Microns Shortened by tilt angle
 %SLM.Pixelmax = 238;   %Pixel for a 2Pi phase shift (To be Adjusted at 930)
 SLM.Pixelmax = 210; %255   %Pixel for a 2Pi phase shift (To be Adjusted at 1040 nm)
-
+Setup.Ncycles = 3;
 
 return
 

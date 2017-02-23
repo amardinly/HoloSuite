@@ -11,6 +11,10 @@ function [field2] = function_propagate(field1,lambda,z,psX,psY)
 %
 % Laura Waller, MIT, lwaller@alum.mit.edu
 
+if z == 0
+    field2 = field1;
+else
+
 [m,n]=size(field1);
 M=m;N=n;
 [x,y]=meshgrid(-N/2+1:N/2, -M/2+1:M/2);
@@ -27,3 +31,5 @@ ff(1:m,1:n)=field1;
 objFT=fftshift(fft2(ff));
 field2=(ifft2(fftshift(objFT.*H)));
 field2=field2(1:m,1:n);
+end
+end
