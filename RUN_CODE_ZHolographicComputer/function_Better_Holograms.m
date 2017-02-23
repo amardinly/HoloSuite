@@ -18,6 +18,8 @@ eX = bX+SLM.X-1;
 eY = bY+SLM.Y-1;
 
 
+GaussianBase=imresize(SLM.GaussianBase, [LLY,LLX]);
+
 %Initial construct :
 if RandomizePhase == 1;     phase = 2*pi*rand(LLY,LLX); else;phase = zeros(LLY,LLX);end;
 dZ = diff(DepthVector);
@@ -28,13 +30,16 @@ Holostart = Holostart+Mask{i+1}.*exp(1i*phase);
 end
 Holostart = function_propagate(Holostart,Setup.lambda,DepthVector(end),PixelSize.Y,PixelSize.X);  
 FourierPhaseMask = angle(fft2(fftshift(Holostart)));
-Hologramtemp = (exp(1i*(fftshift(FourierPhaseMask))));
+Hologramtemp = GaussianBase.*(exp(1i*(fftshift(FourierPhaseMask))));
 
 for jjj = 1:NCycles
-[scores, DiffractionEfficiency ] = function_Evaluate_Holograms( Hologramtemp, SLM, Setup,ExportMe); 
+[scores, DE ] = function_Evaluate_Holograms( Hologramtemp, SLM, Setup,ExportMe); 
+
+DiffractionEfficiency.DE{jjj} = DE;
 scores = scores / sum(scores);
-scores;
+DiffractionEfficiency.scores{jjj} = scores;
 request = (ExportMe.GetpowerMultiplier/sum(ExportMe.GetpowerMultiplier));
+DiffractionEfficiency.request{jjj} = request;
 Adjustments = request./scores;
 RealHologram = ifftshift(ifft2(ifftshift(Hologramtemp)));
 RefocusImage = function_propagate(RealHologram,Setup.lambda,-DepthVector(1),PixelSize.Y,PixelSize.X);
@@ -47,7 +52,7 @@ RefocusImage = function_Adjust_Amplitude(RefocusImage,Mask{i+1},Adjustments(i+1)
 end
 Holostart = function_propagate(RefocusImage,Setup.lambda,DepthVector(end),PixelSize.Y,PixelSize.X);  
 FourierPhaseMask = angle(fft2(fftshift(Holostart)));
-Hologramtemp = (exp(1i*(fftshift(FourierPhaseMask))));
+Hologramtemp = GaussianBase.*(exp(1i*(fftshift(FourierPhaseMask))));
 end
 
 

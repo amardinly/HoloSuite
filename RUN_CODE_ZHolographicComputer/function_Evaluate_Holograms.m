@@ -35,9 +35,7 @@ scores(j) = mean(uu(uu>0));
 diffefficiency =  diffefficiency+sum(uu(uu>0)); % Sum of intensity that falls into masks aka power in area of interest
 end
 
-[LLA,LLB] = size(RealHologram);
-
-diffefficiency =diffefficiency; % divided by unit intensity
+diffefficiency =diffefficiency/mean(abs(Hologram(:).^2)); % divided by unit intensity
 
 end
 

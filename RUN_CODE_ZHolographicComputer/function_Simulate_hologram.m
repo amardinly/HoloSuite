@@ -6,7 +6,7 @@ if numel(varargin) == 1
     
     Simulation.XYresolution = 1;                      %Micrometers            desired imaging resolution for 3D stack reconstruction
     Simulation.DepthVec = linspace(-200,200,100);       %Vector micrometers     Depth levels requested for the reconstruction
-    Simulation.XYRange =700;                          %Microns :              size of the Obeservation window
+    Simulation.XYRange =512;                          %Microns :              size of the Obeservation window
     Simulation.optionsave = 0;                        %0 1 2                  Set to 0 for nothing, 1 for saving stacks, 2 for saving stacks and rotating views
     Simulation.angles = linspace(0,90,100);           %vector of degrees :    angular range for rotating views
     Simulation.Name = '';                             %string                 Filename to save stack and rotating views

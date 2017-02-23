@@ -41,6 +41,8 @@ Setup.lambda = 1.042 ;                                                          
 Setup.FPV = 5;                                                                         %Voltage for SATSUMA Gain
 Setup.EOMCalibrationsteps = 60;                                                         %Number of global Calibration Steps
 Setup.EOMCalibrationblinktime = 5; 
+Setup.Ncycles = 6;
+
 
 SLM.ScreenID = 2;      
 SLM.X = 800;                                                                            %Pixel Count X axis
@@ -51,7 +53,13 @@ SLM.pixelsizeX = 20;                                                            
 SLM.pixelsizeY = 20;                                                                    %Pixel Sixe along Y axis, In Microns Shortened by tilt angle
 %SLM.Pixelmax = 238;   %Pixel for a 2Pi phase shift (To be Adjusted at 930)
 SLM.Pixelmax = 210; %255   %Pixel for a 2Pi phase shift (To be Adjusted at 1040 nm)
-Setup.Ncycles = 3;
+
+[UX,UY] = meshgrid(SLM.pixelsizeY*((1:SLM.X)-mean(1:SLM.X)),SLM.pixelsizeX*((1:SLM.Y)-mean(1:SLM.Y)));
+SLM.sigmamicronX = 7000;
+SLM.sigmamicronY = 5000;
+SLM.GaussianBase = exp(-(UX.^2/SLM.sigmamicronX^2+UY.^2/SLM.sigmamicronY^2));
+
+
 
 return
 
