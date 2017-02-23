@@ -44,7 +44,7 @@ Setup.EOMCalibrationblinktime = 5;
 Setup.Ncycles = 6;
 
 
-SLM.ScreenID = 2;      
+SLM.ScreenID = 1;      
 SLM.X = 800;                                                                            %Pixel Count X axis
 SLM.Y = 600;                                                                            %Pixel Count Y axis
 SLM.subsampling = 2 ;                                                                   %Number subsampling for hologram computation
