@@ -28,14 +28,25 @@ RefocusImage = function_propagate(RealHologram,Setup.lambda,-DepthVector(j),Pixe
 %imagesc(Mask{j});
 %title(int2str(j));
 %pause(0.1);
+gatherarea = double(Mask{j}>0);
+gatherarea = imgaussfilt(gatherarea, 2);
+gatherarea = double(gatherarea>0);
+% here add little bit of flexibility
 
-uu = double(Mask{j}>0).*abs(RefocusImage.^2);
+uu = gatherarea.*abs(RefocusImage.^2);
 uu = uu(:);
-scores(j) = mean(uu(uu>0));
+scores(j) = sum(uu(uu>0));
 diffefficiency =  diffefficiency+sum(uu(uu>0)); % Sum of intensity that falls into masks aka power in area of interest
 end
 
 diffefficiency =diffefficiency/mean(abs(Hologram(:).^2)); % divided by unit intensity
+
+disp(scores)
+
+gg = figure(6)
+plot(scores/sum(scores),'blue')
+hold on
+pause(0.1)
 
 end
 
