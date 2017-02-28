@@ -18,7 +18,12 @@ eX = bX+SLM.X-1;
 eY = bY+SLM.Y-1;
 
 
-GaussianBase=imresize(SLM.GaussianBase, [LLY,LLX]);
+[LY,LX] = size(SLM.GaussianBase);
+
+GaussianBase=zeros([LLY,LLX]);
+by = floor(LLY/2-LY/2); bx = floor(LLX/2-LX/2);
+GaussianBase(by:(by+LY-1),bx:(bx+LX-1))= SLM.GaussianBase;
+
 
 %Initial construct :
 if RandomizePhase == 1;     phase = 2*pi*rand(LLY,LLX); else;phase = zeros(LLY,LLX);end;
@@ -33,7 +38,7 @@ FourierPhaseMask = angle(fft2(fftshift(Holostart)));
 Hologramtemp = GaussianBase.*(exp(1i*(fftshift(FourierPhaseMask))));
 
 for jjj = 1:NCycles
-[scores, DE ] = function_Evaluate_Holograms( Hologramtemp, SLM, Setup,ExportMe); 
+[scores, DE ] = function_Evaluate_Holograms( Hologramtemp(bY:eY,bX:eX), SLM, Setup,ExportMe); 
 
 DiffractionEfficiency.DE{jjj} = DE;
 scores = scores / sum(scores);
@@ -44,7 +49,7 @@ Adjustments = request./scores;
 RealHologram = ifftshift(ifft2(ifftshift(Hologramtemp)));
 RefocusImage = function_propagate(RealHologram,Setup.lambda,-DepthVector(1),PixelSize.Y,PixelSize.X);
 %ggg= figure(4);imagesc(abs(RefocusImage));pause(1)
-RefocusImage = function_Adjust_Amplitude(RefocusImage,Mask{1},sqrt(Adjustments(1)));
+RefocusImage = function_Adjust_Amplitude(RefocusImage,Mask{1},Adjustments(1));
 for i = 1:numel(dZ)
 RefocusImage = function_propagate(RefocusImage,Setup.lambda,-dZ(i),PixelSize.Y,PixelSize.X); 
 RefocusImage = function_Adjust_Amplitude(RefocusImage,Mask{i+1},Adjustments(i+1));
