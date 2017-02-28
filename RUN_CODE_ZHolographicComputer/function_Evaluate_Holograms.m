@@ -43,17 +43,17 @@ gatherme = imresize(gatherarea, 1/subsampling );
 gatherarea = zeros(LLY,LLX);
 gatherarea(bY:eY,bX:eX)= gatherme;
 
-f = figure(1);
-subplot(2,2,1)
-imagesc(abs(RefocusImage.^2));
-subplot(2,2,2)
-imagesc(gatherarea);
-title(int2str(j));
-subplot(2,2,3)
-imagesc(abs(Hologram.^2));
-subplot(2,2,4)
-imagesc(angle(Hologram));
-pause(0.1);
+%f = figure(1);
+%subplot(2,2,1)
+%imagesc(abs(RefocusImage.^2));
+%subplot(2,2,2)
+%imagesc(gatherarea);
+%title(int2str(j));
+%subplot(2,2,3)
+%imagesc(abs(Hologram.^2));
+%subplot(2,2,4)
+%imagesc(angle(Hologram));
+%pause(0.1);
 
 % here add little bit of flexibility
 
