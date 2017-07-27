@@ -14,35 +14,18 @@ if any(optotuneDepths>50) || any(optotuneDepths<0)
     return;
 end
 
-if nargin==1;
+if nargin==2;
     %defaults = load zoom 1.5
-    fullPathToInterpolant='Z:\holography\Calibration Parameters\20X_Objective_Zoom_15_XYZ_Calibration_PointsOPTOTUNE.mat';
-    
-elseif nargin==2
-    
-    %change 1.5 to 15, etc
-    if mod(zoom,1)>0;
-        zoom=zoom*10;
-    end
-    
-    fullPathToInterpolant=['Z:\holography\Calibration Parameters\20X_Objective_Zoom_' num2str(zoom) '_XYZ_Calibration_PointsOPTOTUNE.mat'];
-   
+    fullPathToInterpolant='Z:\holography\Calibration\DATA_05_Calibration.mat';
+    addpath('Z:\holography\Calibration\')
 else
-    errordlg('too many input arguments, asshole');
+    errordlg('too many or few input arguments, asshole');
     return;
-    
+   
 end
 %% Load Interpolation points (XYZ)
 load(fullPathToInterpolant)
 
-% XYZ_Calibration.RX = 0.75;
-% XYZ_Calibration.RY = 0.75;
-% XYZ_Calibration.CX = 0.54; 
-% XYZ_Calibration.CY = .45;
-% 
-% XYZ_Calibration.BZ = -60000; %-40000; %Range in depth for testing purposes (This is the natural SLM coordinates)
-% XYZ_Calibration.EZ = 60000; % 40000; %Range in depth for testing purposes (This is the natural SLM coordinates)
-% 
 
 % Code Based On Nicos idea that doesnt work 
 % % SLMminX=min(XYZ_Points.GET.X);
@@ -69,13 +52,16 @@ load(fullPathToInterpolant)
 % % end
 
 %code based on Alan's stupid Idea that does work
+if ismember(zoom,COC.Zoom)
 
-U=[XYZ_Points.ASK.X XYZ_Points.ASK.Y XYZ_Points.ASK.Z];
-UniqZ=unique(U(:,3));
-for j = 1:numel(UniqZ);
-   thesePoints=U(find(U(:,3)==UniqZ(j)),1:2);
-   r(j,:)=[min(thesePoints(:,1)) min(thesePoints(:,2)) max(thesePoints(:,1)) max(thesePoints(:,2))];
-end
+    U=COC.SIPTS{find(COC.Zoom==zoom)};
+    UniqZ=unique(U(:,3));
+    for j = 1:numel(UniqZ);
+        thesePoints=U(find(U(:,3)==UniqZ(j)),1:2);
+        r(j,:)=[min(thesePoints(:,1)) min(thesePoints(:,2)) max(thesePoints(:,1)) max(thesePoints(:,2))];
+    end
+    
+
 
 for j = 1:numel(optotuneDepths)
    [sorted indx]= sort(abs(UniqZ-optotuneDepths(j)));
@@ -106,68 +92,7 @@ end
 
 rect(:,3:4)=rect(:,3:4)-rect(:,1:2);
 
-
-%Cdoe based on a REALLY stupid Alan idea that DOES Work
-
-% %for j=1:numel(optotuneDepths)
-%     currentX=0;
-%     currentY=0;
-%     SLMPOINT=[0 0 0];
-%     
-%     while SLMPOINT(1)<SLMminX
-%         
-%         SLMPOINT=function_3DCofC([currentX currentY optotuneDepths(j)]',XYZ_Points);  %takes location in Real Units and Returns SLM units
-%         currentX=currentX+1;
-%         
-%     end
-%     
-%     rect(j,1)=currentX;
-%     
-%     
-%     currentY=0;
-%     SLMPOINT=[0 0 0];
-%     
-%     while SLMPOINT(2)<SLMminY
-%         
-%         SLMPOINT=function_3DCofC([rect(1) currentY optotuneDepths(j)]',XYZ_Points);  %takes location in Real Units and Returns SLM units
-%         %currentX=currentX+1;
-%         currentY=currentY+1;
-%         
-%     end
-%     
-%     
-%     rect(j,2)=currentY;
-%     
-%     
-%     
-%     
-%     currentX=512;
-%     currentY=512;
-%     SLMPOINT=[1 1 1];
-%     while SLMPOINT(1)>SLMmaxX
-%         
-%         SLMPOINT=function_3DCofC([currentX currentY optotuneDepths(j)]',XYZ_Points);  %takes location in Real Units and Returns SLM units
-%         currentX=currentX-1;
-%         
-%     end
-%     
-%     rect(j,3)=currentX;
-%     
-%     
-%     
-%     currentY=512;
-%     SLMPOINT=[1 1 1];
-%     while SLMPOINT(2)>SLMmaxY
-%         
-%         SLMPOINT=function_3DCofC([currentX currentY optotuneDepths(j)]',XYZ_Points);  %takes location in Real Units and Returns SLM units
-%         currentY=currentY-1;
-%         
-%     end
-%     
-%     rect(j,4)=currentY;
-%     
-%     
-% end
-% 
-
+else
+    errordlg('Requested Zoom not calibrated')
+end    
 
