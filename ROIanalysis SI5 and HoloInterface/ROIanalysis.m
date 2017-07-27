@@ -1546,9 +1546,7 @@ else
     
     newOptotuneDepths= SI.SI.hStackManager.zs;
     newZoom= SI.SI.hRoiManager.scanZoomFactor;
-    if any( numel(newOptotuneDepths)~=numel(gd.Holo.optotuneDepths),...
-            any(newOptotuneDepths~=gd.Holo.optotuneDepths),...
-            newZoom ~= gd.Holo.zoom)
+    if ( numel(newOptotuneDepths)~=numel(gd.Holo.optotuneDepths) ||  newZoom ~= gd.Holo.zoom)
         gd.Holo.zoom = newZoom;
         gd.Holo.optotuneDepths = newOptotuneDepths;
         gd.Holo.recalcTargetArea =1;
