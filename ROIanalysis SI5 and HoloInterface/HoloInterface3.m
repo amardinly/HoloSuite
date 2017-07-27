@@ -582,6 +582,9 @@ if (handles.objective == 20) && handles.zoom == 1
 elseif (handles.objective == 20) && handles.zoom == 2
     lx= 400;
     ly= 400;
+elseif (handles.objective == 20) && handles.zoom == 3;
+    lx=260;
+    ly=260;
 elseif (handles.objective == 20) && handles.zoom == 1.5
     lx= 600;
     ly= 600;
@@ -605,25 +608,26 @@ end
         load([locations.HoloRequest 'ROIdata.mat']);
         
         
-       disp('warning: optotune depth hack enabled.  check line 608 to disable')
+   %    disp('warning: optotune depth hack enabled.  check line 608 to disable')
        %optotnue depth out of alignment .  we cant figure it out.  this is
        %easier than actually sciencing.
-       for u = 1:numel(ROIdata.rois);
-         if ROIdata.rois(u).OptotuneDepth==17;
-               ROIdata.rois(u).OptotuneDepth=23; 
-         elseif ROIdata.rois(u).OptotuneDepth==28;
-               ROIdata.rois(u).OptotuneDepth=33;   
-         elseif ROIdata.rois(u).OptotuneDepth==36;
-               ROIdata.rois(u).OptotuneDepth=39;
-         elseif  ROIdata.rois(u).OptotuneDepth~=0;
-             errordlg('WARNING: not a calibrated optotune depth! Z interp likely to fail!')
-             return;
-         end
-       end
+%        for u = 1:numel(ROIdata.rois);
+%          if ROIdata.rois(u).OptotuneDepth==17;
+%                ROIdata.rois(u).OptotuneDepth=23; 
+%          elseif ROIdata.rois(u).OptotuneDepth==28;
+%                ROIdata.rois(u).OptotuneDepth=33;   
+%          elseif ROIdata.rois(u).OptotuneDepth==36;
+%                ROIdata.rois(u).OptotuneDepth=39;
+%          elseif  ROIdata.rois(u).OptotuneDepth~=0;
+%              errordlg('WARNING: not a calibrated optotune depth! Z interp likely to fail!')
+%              %return;
+%          end
+%        end
        
              
                
-        
+       % errordlg('Hard Coded -5 um Y offset to account for misalignment - line 641')
+
         
         for j = 1:numel(ROIdata.rois);
        
@@ -633,6 +637,9 @@ end
             r=handles.sphereDiameter/2;
             x=ROIdata.rois(j).centroid(1);
             y=ROIdata.rois(j).centroid(2);
+            
+            %y = y - (5*(512/ly));  %delete this if you ever fix alignment
+            
             %r= desired radius
             %x = x coordinates of the centroid
             %y = y coordinates of the centroid
@@ -656,21 +663,22 @@ end
     end;
     
     if handles.correctPower
-        if strcmp(handles.hologram_config,'DLS'); TF=1; else; TF=0; end;
-        for j = 1:numel(ROIdata.rois)
-            ROIlocation(1:2)=ROIdata.rois(j).centroid;
-            ROIlocation(3)=0;  % on focal plane - ADJUST
-            
-            ScaleFactors(j)=ScaleEnergy(ROIlocation,locations,TF);
-            
-        end
-        
-        holoRequest.PowerAttenuation=ScaleFactors;
+%         if strcmp(handles.hologram_config,'DLS'); TF=1; else; TF=0; end;
+%         for j = 1:numel(ROIdata.rois)
+%             ROIlocation(1:2)=ROIdata.rois(j).centroid;
+%             ROIlocation(3)=0;  % on focal plane - ADJUST
+%             
+%             ScaleFactors(j)=ScaleEnergy(ROIlocation,locations,TF);
+%             
+%         end
+%         
+%        holoRequest.PowerAttenuation=ScaleFactors;
+    disp('Power Correction with old interpolant currently disabled')
+    holoRequest.PowerAttenuation=ones(numel(ROIdata.rois),1);
+
     else
-        holoRequest.PowerAttenuation=[];
-        %    ScaleFactor=1./ScaleFactor;
-        %    ScaleFacor=
-        %load power distrubituion and apply tranformation
+        holoRequest.PowerAttenuation=ones(numel(ROIdata.rois),1);
+
         
     end
 
@@ -685,10 +693,13 @@ if warning == 0;
     MODySpacing = (handles.ySpacing/ly)*512;
     
     
-    %
-%    errordlg('SpecialGrid = 1 (line 635)')
-  %   holoRequest.specialGrid = 1;  % if 1 will only apply grid to ROI1
-    
+%     %
+%         errordlg('SpecialGrid = 1 (line 697)')
+%         holoRequest.specialGrid = 1;  % if 1 will only apply grid to ROI1
+     
+   holoRequest.specialGrid = 0;
+     
+     
     %generate output file
     holoRequest.reload = handles.reload;
     holoRequest.objective=handles.objective;
@@ -698,25 +709,37 @@ if warning == 0;
         handles.rois={[1:numel(handles.ROIdata.ROIdata.rois(:))]};
     end
     
+
+    iiv=1; toDel=[];
+    for u = 1:numel(handles.rois);
+        if isempty(handles.rois{u})
+            toDel(iiv)=u;
+            iiv=iiv+1;
+        end
+    end
+    
+    handles.rois(toDel)=[];
+    
     [listOfPossibleHolos convertedSequence] = convertSequence(handles.rois);
     holoRequest.rois=listOfPossibleHolos;
     holoRequest.Sequence = {convertedSequence};
     
     % if we are scaling factor
     if ~isempty(holoRequest.PowerAttenuation)
-        for j = 1:numel(holoRequest.rois);
-            clear Scaled toScale;
-            thisHolo=holoRequest.rois{j};
-            for k = 1:numel(thisHolo);
-                toScale(k)=holoRequest.PowerAttenuation(thisHolo(k));
-            end
-            
-            % Scaled=1./toScale;
-           % holoRequest.roisLambda{j}=toScale/sum(toScale);
-          %  holoRequest.roisScale{j}=toScale;
-          toScale=1./toScale;
-            holoRequest.powerMultiplier{j}= toScale/(mean(toScale));
-        end
+        disp('line 711 power correction disabled until I can figure out whats going on')
+%         for j = 1:numel(holoRequest.rois);
+%             clear Scaled toScale;
+%             thisHolo=holoRequest.rois{j};
+%             for k = 1:numel(thisHolo);
+%                 toScale(k)=holoRequest.PowerAttenuation(thisHolo(k));
+%             end
+%             
+%              Scaled=1./toScale;
+%             holoRequest.roisLambda{j}=toScale/sum(toScale);
+%             holoRequest.roisScale{j}=toScale;
+%            toScale=1./toScale;
+%              holoRequest.powerMultiplier{j}= toScale/(mean(toScale));
+%        end
     end
     
     %note - on daq feedback, multiply sum(toScale) * reqWatts
